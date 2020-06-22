@@ -1,12 +1,6 @@
 import numpy as np
 from random import randint
 
-observations = np.array(['normal', 'cold', 'dizzy'])
-states = np.array(['Healthy', 'Fever'])
-initial_state_probability = np.array([0.6, 0.4])
-transition_probabilities = np.array([ [0.7, 0.3], [0.4, 0.6] ])
-emission_probabilities = np.array([ [0.5, 0.4, 0.1], [0.1, 0.3, 0.6] ])
-
 def viterbi(observations, states, initial_state_probability, transition_probabilities, emission_probabilities, observation_sequence):
 	"""
 	Runs the Viterbi algorithm for a Hidden Markov Model (HMM) with following paramters:
@@ -52,10 +46,17 @@ def viterbi(observations, states, initial_state_probability, transition_probabil
 		current_index = state_sequence[i][current_index]
 	return answer
 
-observation_list = []
-for i in range(100):
-	observation_list.append(observations[randint(0, 2)])
-observation_sequence = np.array(observation_list)
-print(observation_sequence)
-state_sequence = viterbi(observations, states, initial_state_probability, transition_probabilities, emission_probabilities, observation_sequence)
-print(state_sequence)
+if __name__ == "__main__":
+	observations = np.array(['normal', 'cold', 'dizzy'])
+	states = np.array(['Healthy', 'Fever'])
+	initial_state_probability = np.array([0.6, 0.4])
+	transition_probabilities = np.array([ [0.7, 0.3], [0.4, 0.6] ])
+	emission_probabilities = np.array([ [0.5, 0.4, 0.1], [0.1, 0.3, 0.6] ])
+
+	observation_list = []
+	for i in range(100):
+		observation_list.append(observations[randint(0, 2)])
+	observation_sequence = np.array(observation_list)
+	print(observation_sequence)
+	state_sequence = viterbi(observations, states, initial_state_probability, transition_probabilities, emission_probabilities, observation_sequence)
+	print(state_sequence)
