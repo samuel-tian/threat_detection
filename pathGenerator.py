@@ -2,6 +2,7 @@
 import random, math
 from operator import itemgetter
 import numpy as np
+import matplotlib.pyplot as plt
 
 def sort_by_distance_to_end(current_position, displacement_vectors, ending_position):
     #sorts list of moves in increasing order of the distance to the ending position of the position gained from applying the move to the current position
@@ -196,7 +197,30 @@ def generate_circling_points(scale, prob_distribution):
 
     return trajectory
 
+def write_trajectories_to_file(trajectories, type="sampleTrajectory", numLines=0, prob_dist=[]):
+    name = type + "_" + str(lines) + str(prob_dist) + ".txt"
+    outputFile = open(name, "w")
+    #let me know if you need to change the formatting of this csv
+    for trajectory in trajectories:
+        line = ""
+        for point in trajectory:
+            line = line + "(" + point[0] + ", " + point[1] + "), "
+        line = line[0:len(line)-2] + "\n"
+        outputFile.write(line)
+    outputFile.close()
+
+def display_trajectory(trajectory):
+    x = []
+    y = []
+    for point in trajectory:
+        x.append(point[0])
+        y.append(point[1])
+    plt.plot(x, y, 'o', color='black')
+    plt.show()
+
+
+
 
 if __name__ == "__main__":
-    points = generate_circling_points(10, (100, 0, 0, 0, 0, 0, 0, 0, 0, 0)) #example
-    print(points)
+    trajectory = generate_circling_points(10, (60, 15, 15, 10, 0, 0, 0, 0, 0, 0)) #example
+    display_trajectory(trajectory)
