@@ -1,6 +1,7 @@
 #author: Raghav Samavedam
 import math
 from operator import itemgetter
+from pathGenerator import *
 
 def determine_chasing_1(trajectory):
     #uses three state process to determine if vessel is chasing
@@ -12,7 +13,7 @@ def determine_chasing_1(trajectory):
         possible_moves = [(0, 0), (0, 1), (0, -1), (1, 0), (1, 1), (1, -1), (-1, 0), (-1, 1), (-1, -1)] #displacement vectors
         move_magnitude = []
         for move in possible_moves:
-            position = (current_position[0] + move[0], current_position[1] + move[1])
+            position = (current_pos[0] + move[0], current_pos[1] + move[1])
             distance = math.sqrt(position[0]**2 + position[1]**2)
             move_magnitude.append((move, distance))
         sorted_moves_plus_mag = sorted(move_magnitude, key=itemgetter(1))
@@ -34,3 +35,18 @@ def determine_chasing_1(trajectory):
             return ("chasing", i)
 
     return ("not chasing")
+
+
+if __name__ == "__main__":
+    successes = 0
+    totalSteps = 0
+    for i in range(100):
+        trajectory = generate_chase_points(10, (60, 15, 15, 10, 0, 0, 0, 0, 0, 0))
+        result = determine_chasing_1(trajectory)
+        if result[0] == "chasing":
+            successes += 1
+            totalSteps += result[1]
+    success_rate = successes / 100
+    average_number_of_steps_required = totalSteps / successes
+    print("Success rate: " + str(successes) + "%")
+    print("Average number of steps required to determine that the boat was chasing: " + str(average_number_of_steps_required))
