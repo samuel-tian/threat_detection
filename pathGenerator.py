@@ -213,8 +213,9 @@ def display_trajectory(trajectory):
     x = []
     y = []
     for point in trajectory:
-        x.append(point[0])
-        y.append(point[1])
+        if point[0] != "invisible":
+            x.append(point[0])
+            y.append(point[1])
     plt.plot(x, y, 'o', color='black')
     plt.show()
 
