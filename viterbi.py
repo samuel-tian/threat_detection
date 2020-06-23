@@ -20,29 +20,27 @@ def viterbi(observations, states, initial_state_probability, transition_probabil
 	inverse = {observations[i] : int(i) for i in range(0, n)}
 	for i in range(t):
 		observation_sequence_int[i] = int(inverse[observation_sequence[i]])
-	state_sequence = np.empty(dtype=int, shape=(t+1, k))
-	dp = np.zeros(dtype=float, shape=(t+1, k))
+	state_sequence = np.empty(dtype=int, shape=(t, k))
+	dp = np.zeros(dtype=float, shape=(t, k))
 	for i in range(0, k): # intialize probabilities
-		dp[0][i] = initial_state_probability[i]
+		dp[0][i] = initial_state_probability[i] * emission_probabilities[i][observation_sequence_int[0]]
 		state_sequence[0][i] = -1;
 	# compute DP transitions
-	for i in range(1, t+1):
+	for i in range(0, t):
 		for j in range(0, k):
 			for prev in range(0, k):
-				if (dp[i][j] < dp[i-1][prev] * transition_probabilities[j][prev] * emission_probabilities[j][observation_sequence_int[i-1]]):
-					dp[i][j] = dp[i-1][prev] * transition_probabilities[j][prev] * emission_probabilities[j][observation_sequence_int[i-1]]
+				if (dp[i][j] < dp[i-1][prev] * transition_probabilities[j][prev] * emission_probabilities[j][observation_sequence_int[i]]):
+					dp[i][j] = dp[i-1][prev] * transition_probabilities[j][prev] * emission_probabilities[j][observation_sequence_int[i]]
 					state_sequence[i][j] = prev
-	# print(dp)
 	# backtrack
 	end_state = (-1, -1) # probability of (state, index)
 	for i in range(0, k):
-		if (dp[t][i] > end_state[0]):
-			end_state = (dp[t][i], i)
+		if (dp[t-1][i] > end_state[0]):
+			end_state = (dp[t-1][i], i)
 	answer = np.empty(dtype='U10', shape=(t))
 	current_index = int(end_state[1])
-	for i in range(t, 0, -1):
-		# print(i, current_index)
-		answer[i-1] = states[current_index]
+	for i in range(t-1, -1, -1):
+		answer[i] = states[current_index]
 		current_index = state_sequence[i][current_index]
 	return answer
 
