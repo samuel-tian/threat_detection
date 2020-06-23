@@ -223,5 +223,5 @@ def display_trajectory(trajectory):
 
 
 if __name__ == "__main__":
-    trajectory = generate_circling_points(10, (60, 15, 15, 10, 0, 0, 0, 0, 0, 0)) #example
+    trajectory = generate_circling_points(10, (100, 0, 0, 0, 0, 0, 0, 0, 0, 0)) #example
     display_trajectory(trajectory)

@@ -24,13 +24,13 @@ def determine_chasing_1(trajectory):
 
         #implement the deterministic model
 
-        if actual_move_rank <= 2:
+        if actual_move_rank <= 1:
             current_state += 1
 
-        if actual_move_rank >= 7 and current_state > 1:
+        if actual_move_rank >= 8 and current_state > 1:
             current_state -= 1
 
-        if current_state == 4:
+        if current_state == 50:
             #we are in the accepting state, boat is determined to be chasing
             return ("chasing", i)
 
@@ -40,13 +40,13 @@ def determine_chasing_1(trajectory):
 if __name__ == "__main__":
     successes = 0
     totalSteps = 0
-    for i in range(100):
-        trajectory = generate_chase_points(10, (60, 15, 15, 10, 0, 0, 0, 0, 0, 0))
+    for i in range(1000):
+        trajectory = generate_random_path_points(100, (40, 0, 0, 0, 0, 0, 0, 0, 0, 0))
         result = determine_chasing_1(trajectory)
         if result[0] == "chasing":
             successes += 1
             totalSteps += result[1]
-    success_rate = successes / 100
-    average_number_of_steps_required = totalSteps / successes
-    print("Success rate: " + str(successes) + "%")
+    success_rate = successes / 1000
+    average_number_of_steps_required = 69 #totalSteps / successes
+    print("Success rate: " + str(success_rate*100) + "%")
     print("Average number of steps required to determine that the boat was chasing: " + str(average_number_of_steps_required))
