@@ -12,7 +12,6 @@ class Decimal:
 				while (self.val < 1):
 					self.val *= 10
 					self.exp -= 1
-					print(self.val)
 				return False
 			elif (self.val >= 10):
 				while (self.val >= 10):
@@ -26,6 +25,10 @@ class Decimal:
 			return False
 		return True
 
+	def __init__(self, val=0):
+		self.val = val
+		self.adjust()
+
 	def __init__(self, val=0, exp=0):
 		self.val = val
 		self.exp = exp
@@ -35,21 +38,39 @@ class Decimal:
 		return "{0} E {1}".format(self.val, self.exp)
 
 	def __lt__(self, other):
+		if (isinstance(other, int)):
+			other = Decimal(other)
+		if self.val == 0:
+			return True 
+		elif other.val == 0:
+			return False
 		if self.exp == other.exp:
 			return self.val < other.val
 		else:
 			return self.exp < other.exp
 
 	def __le__(self, other):
+		if (isinstance(other, int)):
+			other = Decimal(other)
+		if self.val == 0:
+			return True
+		elif other.val == 0:
+			return False
 		if self.exp == other.exp:
 			return self.val <= other.val
 		else:
 			return self.exp < other.exp
 
 	def __gt__(self, other):
+		if (isinstance(other, int)):
+			other = Decimal(other)
 		return other <= self
 
 	def __ge__(self, other):
+		if (isinstance(other, int)):
+			other = Decimal(other)
+		if (self == other):
+			return True
 		return other < self
 
 	def __eq__(self, other):
@@ -115,3 +136,11 @@ if __name__ == "__main__":
 	print(x - y)
 	print(x * y)
 	print(x / y)
+	x += y
+	print(x)
+	x -= y
+	print(x)
+	x *= y
+	print(x)
+	x /= y
+	print(x)

@@ -1,52 +1,7 @@
 import numpy as np
 from random import randint
-from smallDecimal.smallDecimal import Decimal
-
-def display(arr):
-	ret = ""
-	if (len(arr.shape) == 1):
-		ret += "["
-		for i in range(arr.shape[0]):
-			ret += str(arr[i])
-			if (i != len(arr)-1):
-				ret += ", "
-		ret += "]"
-	else:
-		ret += "["
-		for i in range(len(arr)):
-			if (i != 0):
-				ret += " "
-			ret += display(arr[i])
-			if (i != len(arr)-1):
-				ret += "\n"
-		ret += "]"
-	return ret	
-
-def recursive_fill(arr, val=0):
-	if (len(arr.shape)==1):
-		for i in range(len(arr)):
-			arr[i] = Decimal(val)
-	else:
-		for i in range(len(arr)):
-			recursive_fill(arr[i])
-
-def recursive_set(ret, arr):
-	if (len(ret.shape)==1):
-		for i in range(len(ret)):
-			ret[i] = Decimal(arr[i])
-	else:
-		for i in range(len(ret)):
-			recursive_set(ret[i], arr[i])
-
-def decimal_array(sh):
-	ret = np.ndarray(dtype=np.object, shape=sh)
-	recursive_fill(ret)
-	return ret
-
-def convert(arr):
-	ret = decimal_array(arr.shape)
-	recursive_set(ret, arr)
-	return ret
+from decimalClasses.smallDecimal import Decimal
+from decimalClasses.decimalArray import DecimalArray
 
 def invert(obs, obs_seq):
 	n = obs.size
@@ -65,11 +20,10 @@ def generate_forwards(obs, states, init_state_prob, trans_prob, emit_prob, obs_s
 	# convert observation sequence strings into numbers
 	obs_seq_int = invert(obs, obs_seq)
 
-	dp = decimal_array((t, k)) # forward variable
+	dp = DecimalArray((t, k)) # forward variable
 	state_seq = np.empty(dtype=int, shape=(t, k)) # prev node, used for Viterbi backtracking
 	for i in range(0, k): # initialize starting probabilities
 		dp[0][i] = (init_state_prob[i] * emit_prob[i][obs_seq_int[0]])
-		print(init_state_prob[i] * emit_prob[i][obs_seq_int[0]])
 		state_seq[0][i] = -1;
 	for i in range(1, t):
 		for j in range(0, k):
@@ -85,7 +39,7 @@ def generate_backwards(obs, states, init_state_prob, trans_prob, emit_prob, obs_
 	t = obs_seq.size
 	obs_seq_int = invert(obs, obs_seq)
 
-	dp = decimal_array((t, k))
+	dp = DecimalArray((t, k))
 	for i in range(0, k):
 		dp[t-1][i] = Decimal(1)
 	for i in range(t-2, -1, -1):
@@ -102,11 +56,30 @@ def evaluate(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 	obs_seq_int = invert(obs, obs_seq)
 
 	forwards = generate_forwards(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq)[0]
-	print("forwards", display(forwards), sep="")
 	ans = Decimal(0)
 	for i in range(0, k):
 		ans += forwards[t-1][i]
 	return ans
+
+def viterbi(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
+	n = obs.size
+	k = states.size
+	t = obs_seq.size
+	obs_seq_int = invert(obs, obs_seq)
+
+	forwards, prev_state = generate_forwards(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq)
+	end_state = (-1, -1) # (probability, index)
+	for i in range(0, k):
+		if (forwards[t-1][i] > end_state[0]):
+			end_state = (forwards[t-1][i], i)
+
+	# backtrack
+	answer = np.empty(dtype="U10", shape=(t))
+	current_index = end_state[1]
+	for i in range(t-1, -1, -1):
+		answer[i] = states[current_index]
+		current_index = prev_state[i][current_index]
+	return answer
 
 def baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 	n = obs.size
@@ -119,7 +92,7 @@ def baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 	beta = generate_backwards(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq) # backwards variable
 	# print("alpha\n", alpha)
 	# print("beta\n", beta)
-	epsilon = decimal_array((t, k, k)) # probability of being in state i at time t, and state j at time t+1
+	epsilon = DecimalArray((t, k, k)) # probability of being in state i at time t, and state j at time t+1
 	for i in range(0, t-1):
 		den = Decimal(0)
 		for j in range(0, k):
@@ -128,7 +101,7 @@ def baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 		for j in range(0, k):
 			for l in range(0, k):
 				epsilon[i][j][l] = alpha[i][j] * beta[i][l] * trans_prob[j][l] * emit_prob[l][obs_seq_int[i+1]] / den
-	gamma = decimal_array((t, k)) # probability of being in state j at time i
+	gamma = DecimalArray((t, k)) # probability of being in state j at time i
 	for i in range(0, t-1):
 		for j in range(0, k):
 			for l in range(0, k):
@@ -137,12 +110,12 @@ def baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 	# reinitialize HMM parameters
 	
 	# new initial probabilities are set to expected frequency in state i at time t=0
-	new_init = decimal_array((k))
+	new_init = DecimalArray((k))
 	for i in range(k):
 		new_init[i] = gamma[0][i]
 	
 	# new transition probabilies are set to expected number of transitions from i to j / expected number of transitions from i
-	new_trans_prob = decimal_array((k, k))
+	new_trans_prob = DecimalArray((k, k))
 	for i in range(0, k):
 		for j in range(0, k):
 			num = Decimal(0)
@@ -153,7 +126,7 @@ def baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 			new_trans_prob[i][j] = num / den
 	
 	# new emission probabilities are set to expected number of times in i observing symbol j / expected number of times in i
-	new_emit_prob = decimal_array((k, n))
+	new_emit_prob = DecimalArray((k, n))
 	for i in range(0, k):
 		for j in range(0, n):
 			num = Decimal(0)
@@ -167,23 +140,34 @@ def baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, obs_seq):
 	return new_init, new_trans_prob, new_emit_prob
 
 if __name__ == "__main__":
-	observations = np.array(['normal', 'cold', 'dizzy'])
+	obs = np.array(['normal', 'cold', 'dizzy'])
 	states = np.array(['Healthy', 'Fever'])
-	initial_state_probability = np.array([0.6, 0.4])
-	initial_state_probability = convert(initial_state_probability)
-	transition_probabilities = np.array([ [0.7, 0.3], [0.4, 0.6] ])
-	transition_probabilities = convert(transition_probabilities)
-	emission_probabilities = np.array([ [0.5, 0.4, 0.1], [0.1, 0.3, 0.6] ])
-	emission_probabilities = convert(emission_probabilities)
+	init_state_prob = DecimalArray([0.6, 0.4])
+	trans_prob = DecimalArray([ [0.7, 0.3], [0.4, 0.6] ])
+	emit_prob = DecimalArray([ [0.5, 0.4, 0.1], [0.1, 0.3, 0.6] ])
 
 	observation_list = []
-	for i in range(10):
-		observation_list.append(observations[randint(0, 2)])
+	for i in range(100):
+		observation_list.append(obs[randint(0, 2)])
 	observation_sequence = np.array(observation_list)
 	print(observation_sequence)
-	print("before", evaluate(observations, states, initial_state_probability, transition_probabilities, emission_probabilities, observation_sequence))
-	initial_state_probability,transition_probabilities,emission_probabilities = baum_welch(observations, states, initial_state_probability, transition_probabilities, emission_probabilities, observation_sequence)
-	print("init\n", display(initial_state_probability), sep="")
-	print("trans\n", display(transition_probabilities), sep="")
-	print("emit\n", display(emission_probabilities), sep="")
-	print("after", evaluate(observations, states, initial_state_probability, transition_probabilities, emission_probabilities, observation_sequence))
+	
+	print("before", evaluate(obs, states, init_state_prob, trans_prob, emit_prob, observation_sequence))
+	print("init\n", (init_state_prob), sep="")
+	print("trans\n", (trans_prob), sep="")
+	print("emit\n", (emit_prob), sep="")
+
+	state_seq = viterbi(obs, states, init_state_prob, trans_prob, emit_prob, observation_sequence)
+	print(state_seq)
+
+	print("----------------------")	
+
+	init_state_prob,trans_prob,emit_prob = baum_welch(obs, states, init_state_prob, trans_prob, emit_prob, observation_sequence)
+	print("after", evaluate(obs, states, init_state_prob, trans_prob, emit_prob, observation_sequence))
+	print("init\n", (init_state_prob), sep="")
+	print("trans\n", (trans_prob), sep="")
+	print("emit\n", (emit_prob), sep="")
+
+	state_seq = viterbi(obs, states, init_state_prob, trans_prob, emit_prob, observation_sequence)
+	print(state_seq)
+	
