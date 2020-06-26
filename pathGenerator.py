@@ -200,14 +200,38 @@ def generate_circling_points(scale, prob_distribution):
 def write_trajectories_to_file(trajectories, type="sampleTrajectory", numLines=0, prob_dist=[]):
     name = type + "_" + str(lines) + str(prob_dist) + ".txt"
     outputFile = open(name, "w")
-    #let me know if you need to change the formatting of this csv
+    outputFile.write(str(len(trajectories)) + " " + str(len(trajectories[0])) )
     for trajectory in trajectories:
-        line = ""
         for point in trajectory:
-            line = line + "(" + point[0] + ", " + point[1] + "), "
-        line = line[0:len(line)-2] + "\n"
+            line = str(point[0]) + " " + str(point[1]) + "\n"
         outputFile.write(line)
     outputFile.close()
+
+def read_trajectories_from_file(filename):
+    trajectoryFile = open(filename, "w")
+    firstLine = trajectoryFile.readline()
+    numTrajectories = int(firstLine[0:firstLine.index(" ")])
+    numPointsPerTrajectory = int(firstLine[firstLine.index(" ") + 1:])
+    numTrajectoriesRead = 0
+    trajectories = []
+    while numTrajectoriesRead < numTrajectories:
+        trajectories.append([])
+        numPointsRead = 0
+        while numPointsRead < numPointsPerTrajectory:
+            line = trajectoryFile.readline()
+            point = ( int(firstLine[0:line.index(" ")]), int(line[firstLine.index(" ") + 1:]) )
+            trajectories[numTrajectoriesRead].append(point)
+            numPointsRead += 1
+        numTrajectoriesRead += 1
+
+
+
+
+
+
+
+
+
 
 def display_trajectory(trajectory):
     x = []
@@ -223,5 +247,5 @@ def display_trajectory(trajectory):
 
 
 if __name__ == "__main__":
-    trajectory = generate_circling_points(10, (100, 0, 0, 0, 0, 0, 0, 0, 0, 0)) #example
+    trajectory = generate_circling_points(10, (50, 10, 10, 10, 10, 10, 0, 0, 0, 0)) #example
     display_trajectory(trajectory)
