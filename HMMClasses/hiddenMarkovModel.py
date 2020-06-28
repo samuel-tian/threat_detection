@@ -1,3 +1,4 @@
+import timeit
 import numpy as np
 from random import randint
 from decimalClasses.smallDecimal import Decimal
@@ -13,16 +14,43 @@ class HMM:
 			self.init_state_prob = args[2]
 			self.trans_prob = args[3]
 			self.emit_prob = args[4]
-		self.inverse = {self.obs[i] : int(i) for i in range(0, obs.size)}
+		else: # only number of states is given
+			k = args[0] # number of states
+			n = 10 # observations will be the coordinates
+			self.obs = np.zeros(dtype=tuple, shape=(n*n))
+			for i in range(0, n): # initialize coordinates
+				for j in range(0, n):
+					self.obs[n * i + j] = (i, j)
+			self.states = np.zeros(dtype=int, shape=(k))
+			for i in range(0, k):
+				self.states[i] = i
+
+			# uniform int distribution
+			self.init_state_prob = DecimalArray((k)) # length k array
+			for i in range(0, k):
+				self.init_state_prob[i] = Decimal(1 / k)
+
+			# uniform int distribution
+			self.trans_prob = DecimalArray((k, k)) # k by k matrix
+			for i in range(0, k):
+				for j in range(0, k):
+					self.trans_prob[i][j] = Decimal(1 / k)
+
+			# uniform int distribution
+			self.emit_prob = DecimalArray((k, n*n)) # k by n matrix
+			for i in range(0, k):
+				for j in range(0, n*n):
+					self.emit_prob[i][j] = Decimal(1 / (n*n))
+		self.inverse = {self.obs[i] : int(i) for i in range(0, self.obs.size)}
 
 	def __str__(self):
 		ret = ""
-		ret += "observations\n{}".format(self.obs)
-		print("states", self.states, sep="\n")
-		print("initial state probabilities", self.init_state_prob, sep="\n")
-		print("transition matrix", self.trans_prob, sep="\n")
-		print("emission matrix", self.emit_prob, sep="\n")
-		print("------------------")
+		ret += "observations\n{}\n".format(self.obs)
+		ret += "states\n{}\n".format(self.states)
+		ret += "initial state probabilities\n{}\n".format(self.init_state_prob)
+		ret += "transition matrix\n{}\n".format(self.trans_prob)
+		ret += "emission matrix\n{}\n".format(self.emit_prob)
+		ret += "-" * 15 + "\n"
 		return ret
 
 	def invert(self, obs_seq):
@@ -42,17 +70,13 @@ class HMM:
 		obs_seq_int = self.invert(obs_seq)
 
 		dp = DecimalArray((t, k)) # forward variable
-		state_seq = np.empty(dtype=int, shape=(t, k)) # prev node, used for Viterbi backtracking
 		for i in range(0, k): # initialize starting probabilities
 			dp[0][i] = (self.init_state_prob[i] * self.emit_prob[i][obs_seq_int[0]])
-			state_seq[0][i] = -1;
 		for i in range(1, t):
 			for j in range(0, k):
 				for prev in range(0, k):
-					if (dp[i][j] < dp[i-1][prev] * (self.trans_prob[j][prev] * self.emit_prob[j][obs_seq_int[i]])):
-						dp[i][j] = dp[i-1][prev] * (self.trans_prob[j][prev] * self.emit_prob[j][obs_seq_int[i]])
-						state_seq[i][j] = prev
-		return dp, state_seq
+					dp[i][j] += dp[i-1][prev] * self.trans_prob[prev][j] * self.emit_prob[j][obs_seq_int[i]]
+		return dp
 
 	def generate_backwards(self, obs_seq):
 		n = self.obs.size
@@ -66,8 +90,7 @@ class HMM:
 		for i in range(t-2, -1, -1):
 			for j in range(0, k):
 				for nex in range(0, k):
-					if (dp[i][j] < dp[i+1][nex] * (self.trans_prob[j][nex] * self.emit_prob[j][obs_seq_int[i]])):
-						dp[i][j] = dp[i+1][nex] * (self.trans_prob[j][nex] * self.emit_prob[j][obs_seq_int[i]])
+					dp[i][j] += dp[i+1][nex] * self.trans_prob[j][nex] * self.emit_prob[nex][obs_seq_int[i+1]]
 		return dp
 
 	def evaluate(self, obs_seq):
@@ -76,7 +99,7 @@ class HMM:
 		t = obs_seq.size
 		obs_seq_int = self.invert(obs_seq)
 
-		forwards = self.generate_forwards(obs_seq)[0]
+		forwards = self.generate_forwards(obs_seq)
 		ans = Decimal(0)
 		for i in range(0, k):
 			ans += forwards[t-1][i]
@@ -88,7 +111,17 @@ class HMM:
 		t = obs_seq.size
 		obs_seq_int = self.invert(obs_seq)
 
-		forwards, prev_state = self.generate_forwards(obs_seq)
+		# calculate DP transitions
+		forwards = DecimalArray((t, k))
+		prev_state = np.zeros(dtype=int, shape=(t, k))
+		for i in range(0, t):
+			for j in range(0, k):
+				for prev in range(0, k):
+					if (forwards[i][j] < forwards[i-1][prev] * self.trans_prob[j][prev] * self.emit_prob[j][obs_seq_int[i]]):
+						forwards[i][j] = forwards[i-1][prev] * self.trans_prob[j][prev] * self.emit_prob[j][obs_seq_int[i]]
+						prev_state[i][j] = prev
+
+		# get ending state
 		end_state = (-1, -1) # (probability, index)
 		for i in range(0, k):
 			if (forwards[t-1][i] > end_state[0]):
@@ -98,7 +131,7 @@ class HMM:
 		answer = np.empty(dtype="U10", shape=(t))
 		current_index = end_state[1]
 		for i in range(t-1, -1, -1):
-			answer[i] = states[current_index]
+			answer[i] = self.states[current_index]
 			current_index = prev_state[i][current_index]
 		return answer
 
@@ -109,24 +142,29 @@ class HMM:
 		obs_seq_int = self.invert(obs_seq)
 		
 		# variable names for arrays are taken from Rabiner paper
-		alpha = self.generate_forwards(obs_seq)[0] # forwards variable
+		alpha = self.generate_forwards(obs_seq) # forwards variable
 		beta = self.generate_backwards(obs_seq) # backwards variable
-		# print("alpha\n", alpha)
-		# print("beta\n", beta)
+
 		epsilon = DecimalArray((t, k, k)) # probability of being in state i at time t, and state j at time t+1
 		for i in range(0, t-1):
 			den = Decimal(0)
 			for j in range(0, k):
 				for l in range(0, k):
-					den = den + alpha[i][j] * beta[i][l] * self.trans_prob[j][l] * self.emit_prob[l][obs_seq_int[i+1]]
+					den = den + alpha[i][j] * beta[i+1][l] * self.trans_prob[j][l] * self.emit_prob[l][obs_seq_int[i+1]]
 			for j in range(0, k):
 				for l in range(0, k):
-					epsilon[i][j][l] = alpha[i][j] * beta[i][l] * self.trans_prob[j][l] * self.emit_prob[l][obs_seq_int[i+1]] / den
+					if den==0:
+						epsilon[i][j][l] = Decimal(0)
+					else:
+						epsilon[i][j][l] = alpha[i][j] * beta[i][l] * self.trans_prob[j][l] * self.emit_prob[l][obs_seq_int[i+1]] / den
+
 		gamma = DecimalArray((t, k)) # probability of being in state j at time i
-		for i in range(0, t-1):
+		for i in range(0, t):
 			for j in range(0, k):
+				den = Decimal(0)
 				for l in range(0, k):
-					gamma[i][j] += epsilon[i][j][l]
+					den += alpha[i][l] * beta[i][l]
+				gamma[i][j] = alpha[i][j] * beta[i][j] / den
 
 		# reinitialize HMM parameters
 		
@@ -152,7 +190,7 @@ class HMM:
 			for j in range(0, n):
 				num = Decimal(0)
 				den = Decimal(0)
-				for l in range(0, t-1):
+				for l in range(0, t):
 					if (obs_seq_int[l] == j):
 						num += gamma[l][i]
 					den += gamma[l][i]
@@ -163,32 +201,13 @@ class HMM:
 		self.emit_prob = new_emit_prob
 
 if __name__ == "__main__":
-	obs = np.array(['normal', 'cold', 'dizzy'])
-	states = np.array(['Healthy', 'Fever'])
-	init_state_prob = DecimalArray([0.6, 0.4])
-	trans_prob = DecimalArray([ [0.7, 0.3], [0.4, 0.6] ])
-	emit_prob = DecimalArray([ [0.5, 0.4, 0.1], [0.1, 0.3, 0.6] ])
-
-	observation_list = []
-	for i in range(100):
-		observation_list.append(obs[randint(0, 2)])
-	observation_sequence = np.array(observation_list)
+	identifier = HMM(5)
+	tmp = []
+	for i in range(15):
+		tmp.append((randint(0, 9), randint(0, 9)))
+	observation_sequence = np.empty(len(tmp), dtype='O')
+	observation_sequence[:] = tmp
 	print(observation_sequence)
-	
-	identifier = HMM(obs, states, init_state_prob, trans_prob, emit_prob)
-	print("before", identifier.evaluate(observation_sequence))
-
-	state_seq = identifier.viterbi(observation_sequence)
-	# print(state_seq)
-
-	print(identifier)
-
-	print("----------------------")	
-
-	identifier.baum_welch(observation_sequence)
-	print("after", identifier.evaluate(observation_sequence))
-
-	state_seq = identifier.viterbi(observation_sequence)
-	# print(state_seq)
-
-	print(identifier)
+	for j in range(15):
+		print(identifier.trans_prob)
+		identifier.baum_welch(observation_sequence)

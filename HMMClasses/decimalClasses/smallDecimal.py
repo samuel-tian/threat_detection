@@ -74,6 +74,8 @@ class Decimal:
 		return other < self
 
 	def __eq__(self, other):
+		if (isinstance(other, int)):
+			other = Decimal(other)
 		if (self.exp == other.exp):
 			return self.val == other.val
 		return False
