@@ -30,7 +30,7 @@ def determine_chasing_1(trajectory):
         if actual_move_rank >= 8 and current_state > 1:
             current_state -= 1
 
-        if current_state == 50:
+        if current_state == 55:
             #we are in the accepting state, boat is determined to be chasing
             return ("chasing", i)
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     successes = 0
     totalSteps = 0
     for i in range(1000):
-        trajectory = generate_random_path_points(100, (40, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+        trajectory = generate_chase_points(100, (60, 15, 15, 10, 0, 0, 0, 0, 0, 0))
         result = determine_chasing_1(trajectory)
         if result[0] == "chasing":
             successes += 1
