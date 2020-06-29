@@ -45,12 +45,12 @@ class HMM:
 
 	def __str__(self):
 		ret = ""
+		ret += "-" * 15 + "\n"
 		ret += "observations\n{}\n".format(self.obs)
 		ret += "states\n{}\n".format(self.states)
 		ret += "initial state probabilities\n{}\n".format(self.init_state_prob)
 		ret += "transition matrix\n{}\n".format(self.trans_prob)
 		ret += "emission matrix\n{}\n".format(self.emit_prob)
-		ret += "-" * 15 + "\n"
 		return ret
 
 	def invert(self, obs_seq):
