@@ -46,7 +46,7 @@ if __name__ == "__main__":
         if result[0] == "chasing":
             successes += 1
             totalSteps += result[1]
-    success_rate = successes / 1000
+    success_rate = successes / 1000.0
     average_number_of_steps_required = 69 #totalSteps / successes
     print("Success rate: " + str(success_rate*100) + "%")
     print("Average number of steps required to determine that the boat was chasing: " + str(average_number_of_steps_required))
