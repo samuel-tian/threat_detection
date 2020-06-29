@@ -19,6 +19,26 @@ class HMMScaling:
 	init_prob[n]: probability of being in state i initially
 	trans_prob[n][n]: probability of transitioning from state i to state j
 	emit_prob[n][k]: probability of emitting observation j in state i
+
+	main functions:
+	evaluate(self, observation_sequence) -> float
+		determines the probability of observing the input sequence, with the current model paramters
+		in this case, the return value is the natural logarithm of the actual probability
+	baum_welch(self, observation_sequence) -> null
+		updates the current model in order to maximize the probability of observing the input sequence
+		this is the training aspect of the HMM
+	viterbi(self, observation_sequence) -> np.array (NOT IMPLEMENTED YET)
+		returns the state sequence that has the highest probability of generating the input sequence
+		we won't be using this much, unless we are trying to discover some underlying structure of chase trajectories, because the states we use for our HMMs are arbitrary
+
+	Usage:
+		instantiate HMM with default paramters - model = HMMScaling(number of hidden states, number of observations)
+		train HMM with input sequence - model.baum_welch(observation_sequence)
+		evaluate probability of observing given sequence - model.evaluate(observation_sequence)
+
+		When classifying marine activity, create a separate HMM for each activity i.e. HMM for normal, HMM for following, HMM for circling, etc.
+		Train each HMM with corresponding trajectories i.e. train normal HMM with normal trajectories, following with following trajectories, etc.
+		For each unidentified input sequence, evaluate the probability of observing that sequence for all of the HMMs. Determine which HMM returns the highest probability, and then select that activity.
 	"""
 
 	def __init__(self, *args):
@@ -153,7 +173,7 @@ class HMMScaling:
 
 	def generate_gamma(self, obs_seq, alpha, beta):
 		"""Calculates gamma[T][N]
-		
+
 		gamma[i][j] = probability of being in state j at time i
 		Memory Complexity: O(T * N)
 		Time Complexity: O(T * N)
