@@ -198,7 +198,7 @@ def generate_circling_points(scale, prob_distribution):
     return trajectory
 
 def write_trajectories_to_file(trajectories, type="sampleTrajectory", numLines=0, prob_dist=[]):
-    name = type + "_" + str(lines) + str(prob_dist) + ".txt"
+    name = type + "_" + str(numLines) + str(prob_dist) + ".txt"
     outputFile = open(name, "w")
     outputFile.write(str(len(trajectories)) + " " + str(len(trajectories[0])) )
     for trajectory in trajectories:
