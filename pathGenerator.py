@@ -204,7 +204,7 @@ def write_trajectories_to_file(trajectories, type="sampleTrajectory", numLines=0
     for trajectory in trajectories:
         for point in trajectory:
             line = str(point[0]) + " " + str(point[1]) + "\n"
-        outputFile.write(line)
+            outputFile.write(line)
     outputFile.close()
 
 def read_trajectories_from_file(filename):
@@ -248,4 +248,7 @@ def display_trajectory(trajectory):
 
 if __name__ == "__main__":
     trajectory = generate_circling_points(10, (50, 10, 10, 10, 10, 10, 0, 0, 0, 0)) #example
-    display_trajectory(trajectory)
+    trajectories = []
+    trajectories.append(trajectory) #specify the optional parameters so we know which file is which
+    write_trajectories_to_file(trajectories)
+    
