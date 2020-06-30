@@ -200,7 +200,7 @@ def generate_circling_points(scale, prob_distribution):
 def write_trajectories_to_file(trajectories, type="sampleTrajectory", numLines=0, prob_dist=[]):
     name = type + "_" + str(numLines) + str(prob_dist) + ".txt"
     outputFile = open(name, "w")
-    outputFile.write(str(len(trajectories)) + " " + str(len(trajectories[0])) )
+    outputFile.write(str(len(trajectories)) + " " + str(len(trajectories[0])) + "\n")
     for trajectory in trajectories:
         for point in trajectory:
             line = str(point[0]) + " " + str(point[1]) + "\n"
@@ -208,7 +208,7 @@ def write_trajectories_to_file(trajectories, type="sampleTrajectory", numLines=0
     outputFile.close()
 
 def read_trajectories_from_file(filename):
-    trajectoryFile = open(filename, "w")
+    trajectoryFile = open(filename)
     firstLine = trajectoryFile.readline()
     numTrajectories = int(firstLine[0:firstLine.index(" ")])
     numPointsPerTrajectory = int(firstLine[firstLine.index(" ") + 1:])
@@ -219,10 +219,12 @@ def read_trajectories_from_file(filename):
         numPointsRead = 0
         while numPointsRead < numPointsPerTrajectory:
             line = trajectoryFile.readline()
-            point = ( int(firstLine[0:line.index(" ")]), int(line[firstLine.index(" ") + 1:]) )
+            point = ( int(line[0:line.index(" ")]), int(line[line.index(" ") + 1:]) )
             trajectories[numTrajectoriesRead].append(point)
             numPointsRead += 1
         numTrajectoriesRead += 1
+
+    return trajectories
 
 
 
@@ -251,4 +253,7 @@ if __name__ == "__main__":
     trajectories = []
     trajectories.append(trajectory) #specify the optional parameters so we know which file is which
     write_trajectories_to_file(trajectories)
-    
+    read_in_trajectories = read_trajectories_from_file("sampleTrajectory_0[].txt")
+    #listFile = open("sampleTrajectory_0[].txt")
+    #list = listFile.readline()
+    #print(list)
