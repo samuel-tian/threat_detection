@@ -1,14 +1,13 @@
 import timeit
-import os, sys
 import math
 import numpy as np
 from random import randint
-# from arithmeticClasses.extendedExp import ExtendedExp as EE
-from HMMClasses.arithmeticClasses.extendedExp import ExtendedExp as EE
+from arithmeticClasses.extendedExp import EE
+from decimal import *
 
 class HMMScaling:
 
-	"""Implementation of a Hidden Markov Model with ExtendedExp scaling to avoid precision errors
+	"""Implementation of a Hidden Markov Model with Rabiner scaling to avoid precision errors
 	HMM implementation is only intended to work on a single input sequence
 
 	n: number of states
@@ -66,7 +65,7 @@ class HMMScaling:
 				# initialize emission probability matrix to uniform distribution
 				for i in range(n):
 					for j in range(k):
-						self.emit_prob[i][j] = EE.elnproduct(EE.eln(1), -EE.eln(k))
+						self.emit_prob[i][j] = EE.eln(1 / k)
 			else: # emission matrix is provided, all other paramters are uniform
 				n = args[0].shape[0]
 				k = args[0].shape[1]
@@ -118,18 +117,40 @@ class HMMScaling:
 		initialize: dp[0][i] = init_prob[i] * emit_prob[i][obs_seq[0]]
 		transitions: dp[i][j] = emit_prob[j][obs_seq[i]] * sum_{prev} (dp[i-1][prev] * trans_prob[prev][j])
 		"""
-		dp = np.empty(dtype=float, shape=(t, n))
-		for i in range(n):
-			dp[0][i] = EE.elnproduct(self.init_prob[i], self.emit_prob[i][obs_seq[0]])
-		for i in range(1, t):
-			for j in range(n):
-				logalpha = float('nan')
-				for prev in range(n):
-					logalpha = EE.elnsum(logalpha, EE.elnproduct(dp[i-1][prev], self.trans_prob[prev][j]))
-				dp[i][j] = EE.elnproduct(logalpha, self.emit_prob[j][obs_seq[i]])
-		return dp
 
-	def generate_backwards(self, obs_seq):
+		"""scaling dp values
+		all dp values will be scaled to cover the interval [0, 1]
+		the scale factor for iteration i will be 1 / (sum of all dp[i][j])
+		scaled[i][j] = scale_factor[i] * dp[i][j]
+		"""
+
+		dp = np.zeros(dtype=float, shape=(t, n))
+		scaled = np.zeros(dtype=float, shape=(t, n))
+		scale_factor = np.zeros(dtype=float, shape=(t))
+
+		for i in range(n):
+			# base case
+			if (i == 0):
+				for j in range(n):
+					dp[i][j] = self.init_prob[j] * self.emit_prob[j][obs_seq[i]]
+				scale_factor[i] = 1
+			# induction
+			else:
+				alphasum = 0
+				for j in range(n):
+					alpha = 0
+					for prev in range(n):
+						alpha += scaled[i-1][prev] * self.trans_prob[prev][j]
+					alpha *= self.emit_prob[j][obs_seq[i]]
+					dp[i][j] = alpha
+					alphasum += alpha
+				scale_factor[i] = 1 / alphasum
+			for j in range(n):
+				scaled[i][j] = scale_factor[i] * dp[i][j]
+
+		return scaled, scale_factor
+
+	def generate_backwards(self, obs_seq, scale_factor):
 		"""Calculates backward variable, also known as beta[T][N]
 
 		beta[i][j] = probability of the partial observation sequence obs_seq[i...t-1] where the current state is j
@@ -145,19 +166,32 @@ class HMMScaling:
 		initialize: dp[t-1][i] = 1
 		transitions: dp[i][j] = sum_{next} (emit_prob[next][obs_seq[i+1]] * dp[i+1][next] * trans_prob[j][next])
 		"""
-		dp = np.empty(dtype=float, shape=(t, n))
-		for i in range(n):
-			dp[t-1][i] = 0 # == eln(1)
-		for i in range(t-2, -1, -1):
+
+		dp = np.zeros(dtype=float, shape=(t, n))
+		scaled = np.zeros(dtype=float, shape=(t, n))
+
+		for i in range(t-1, -1, -1):
+			# base case
+			if (i == t-1):
+				for j in range(n):
+					dp[i][j] = 1
+
+			# induction
+			else:
+				beta = 0
+				for j in range(n):
+					beta = 0
+					for nex in range(n):
+						beta += self.trans_prob[j][nex] * emit_prob[nex][obs_seq[i+1]] * scaled[i+1][j]
+					dp[i][j] = beta
 			for j in range(n):
-				logbeta = float('nan')
-				for nex in range(n):
-					logbeta = EE.elnsum(logbeta, EE.elnproduct(self.trans_prob[j][nex], EE.elnproduct(self.emit_prob[nex][obs_seq[i+1]], dp[i+1][j])))
-				dp[i][j] = logbeta
-		return dp
+				scaled[i][j] = scale_factor[i] * dp[i][j]
+
+		return scaled
 	
 	def evaluate(self, obs_seq):
 		"""Determines the probability of seeing obs_seq given the current model paramters
+		Returns the logarithm of P(O | lambda)
 
 		Memory Complexity: O(T * N)
 		Time Complexity: O(T * N^2)
@@ -166,14 +200,14 @@ class HMMScaling:
 		k = self.obs.size
 		t = obs_seq.size
 
-		alpha = self.generate_forwards(obs_seq)
+		alpha, scale_factors = self.generate_forwards(obs_seq)
 		# evaluation probability is the sum over all alpha at T=t-1
-		eval_value = float('nan')
-		for i in range(n):
-			eval_value = EE.elnsum(eval_value, alpha[t-1][i])
+		eval_value = 0
+		for i in range(t):
+			eval_value += -math.log(scale_factors[i])
 		return eval_value
 
-	def generate_gamma(self, obs_seq, alpha, beta):
+	def generate_gamma(self, obs_seq, alpha, beta, scale_factor):
 		"""Calculates gamma[T][N]
 
 		gamma[i][j] = probability of being in state j at time i
@@ -187,17 +221,13 @@ class HMMScaling:
 		"""gamma variable calculation
 		gamma[i][j] = alpha[i][j] * beta[i][j] / (sum over all alpha[x][y]*beta[x][y])
 		"""
-		gamma = np.empty(dtype=float, shape=(t, n))
+		gamma = np.zeros(dtype=float, shape=(t, n))
 		for i in range(t):
-			normalizer = float('nan')
 			for j in range(n):
-				gamma[i][j] = EE.elnproduct(alpha[i][j], beta[i][j])
-				normalizer = EE.elnsum(normalizer, gamma[i][j])
-			for j in range(n):
-				gamma[i][j] = EE.elnproduct(gamma[i][j], -normalizer)
+				gamma[i][j] = alpha[i][j] * beta[i][j] * 1 / scale_factor[i]
 		return gamma
 
-	def generate_epsilon(self, obs_seq, alpha, beta):
+	def generate_epsilon(self, obs_seq, alpha, beta, scale_factor):
 		"""Calculates epsilon[T][N][N]
 
 		epsilon[i][j][k] = probability of probability of being in state j at time i and state k at time i+1
@@ -208,17 +238,12 @@ class HMMScaling:
 		k = self.obs.size
 		t = obs_seq.size
 
-		epsilon = np.empty(dtype=float, shape=(t, n, n))
+		epsilon = np.zeros(dtype=float, shape=(t, n, n))
 		for i in range(t-1):
-			normalizer = float('nan')
+			normalizer = 0
 			for j in range(n):
 				for l in range(n):
-					epsilon[i][j][l] = EE.elnproduct(alpha[i][j], EE.elnproduct(self.trans_prob[j][l], 
-						EE.elnproduct(self.emit_prob[l][obs_seq[i+1]], beta[i+1][l])))
-					normalizer = EE.elnsum(normalizer, epsilon[i][j][l])
-			for j in range(n):
-				for l in range(n):
-					epsilon[i][j][l] = EE.elnproduct(epsilon[i][j][l], -normalizer)
+					epsilon[i][j][l] = alpha[i][j] * self.trans_prob[j][l] * self.emit_prob[l][obs_seq[i]] * beta[i+1][l]
 		return epsilon
 
 	def baum_welch(self, obs_seq):
@@ -231,10 +256,10 @@ class HMMScaling:
 		k = self.obs.size
 		t = obs_seq.size
 
-		alpha = self.generate_forwards(obs_seq)
-		beta = self.generate_backwards(obs_seq)
-		gamma = self.generate_gamma(obs_seq, alpha, beta)
-		epsilon = self.generate_epsilon(obs_seq, alpha, beta)
+		alpha, scale_factor = self.generate_forwards(obs_seq)
+		beta = self.generate_backwards(obs_seq, scale_factor)
+		gamma = self.generate_gamma(obs_seq, alpha, beta, scale_factor)
+		epsilon = self.generate_epsilon(obs_seq, alpha, beta, scale_factor)
 
 		# re-estimate initial state probabilities
 		for i in range(n):
@@ -243,12 +268,12 @@ class HMMScaling:
 		# re-estimate transition matrix
 		for i in range(n):
 			for j in range(n):
-				num = float('nan')
-				den = float('nan')
+				num = 0
+				den = 0
 				for l in range(t-1):
-					num = EE.elnsum(num, epsilon[l][i][j])
-					den = EE.elnsum(den, gamma[l][i])
-				self.trans_prob[i][j] = EE.elnproduct(num, -den)
+					num += epsilon[l][i][j]
+					den += gamma[l][i]
+				self.trans_prob[i][j] = num / den
 
 		# re-estimate emission matrix
 		adj = []
@@ -259,20 +284,21 @@ class HMMScaling:
 					tmp.append(l)
 			adj.append(tmp)
 		for i in range(n):
-			den = float('nan')
+			den = 0
 			for l in range(t):
-				den = EE.elnsum(den, gamma[l][i])
+				den += gamma[l][i]
 			for j in range(k):
-				num = float('nan')
+				num = 0
 				for l in adj[j]:
-					num = EE.elnsum(num, gamma[l][i])
-				self.emit_prob[i][j] = EE.elnproduct(num, -den)
+					num += gamma[l][i]
+				self.emit_prob[i][j] = num / den
 
 if __name__ == "__main__":
 	n = 5
 	k = 5
 	emit_prob = np.empty(dtype=float, shape=(n, k*k))
-	for i in range(n): cur = 1
+	for i in range(n):
+		cur = 1
 		for j in range(k*k-1):
 			x = randint(1, 9)
 			emit_prob[i][j] = cur * x / 10

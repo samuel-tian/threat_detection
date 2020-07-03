@@ -16,15 +16,21 @@ public:
 
 	HMM() = default;
 
-	HMM(int num_states, int num_coordinates);
+	/**
+	 * Initialize HMM with an emissions probability matrix.
+	 * Transition and initial probability matrices will be initialized to a uniform distribution
+	 *
+	 * @param emit_prob emission matrix with dimensions n x k
+	 */
+	HMM(int num_states, int num_emissions);
 
 	HMM(std::vector<std::vector<mpf_class> >& emit_prob);
 
-	std::pair<std::vector<int>, std::vector<int> > generate_forwards(std::vector<int>& obs_seq);
+	std::pair<std::vector<std::vector<mpf_class> >, std::vector<mpf_class> > generate_forwards(std::vector<int>& obs_seq);
 
-	std::vector<int> generate_backwards(std::vector<int>& obs_seq, std::vector<mpf_class> scale_factors);
+	std::vector<std::vector<mpf_class> > generate_backwards(std::vector<int>& obs_seq, std::vector<mpf_class> scale_factors);
 
-	void evaluate(std::vector<int>& obs_seq, mpf_class return_val);
+	mpf_class evaluate(std::vector<int>& obs_seq);
 
 	std::vector<std::vector<mpf_class> > generate_gamma(std::vector<int>& obs_seq, std::vector<mpf_class> alpha, std::vector<mpf_class> beta);
 

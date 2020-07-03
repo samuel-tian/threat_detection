@@ -1,6 +1,6 @@
 import math
 
-class EE:
+class ExtendedExp:
 
 	"""Custom class for extended logarithms and exponentials for HMM probability scaling
 
@@ -34,9 +34,9 @@ class EE:
 				return x
 		else:
 			if (x > y):
-				return x + EE.eln(1 + math.exp(y - x))
+				return x + ExtendedExp.eln(1 + math.exp(y - x))
 			else:
-				return y + EE.eln(1 + math.exp(x - y))
+				return y + ExtendedExp.eln(1 + math.exp(x - y))
 
 	@staticmethod
 	def elnproduct(x, y):
