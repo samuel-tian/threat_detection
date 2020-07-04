@@ -6,6 +6,13 @@
 #ifndef HMM_H
 #define HMM_H
 
+template<typename R, typename S, typename T>
+struct triplet {
+	R first;
+	S second;
+	T third;
+};
+
 class HMM {
 public:
 
@@ -16,27 +23,25 @@ public:
 
 	HMM() = default;
 
-	/**
-	 * Initialize HMM with an emissions probability matrix.
-	 * Transition and initial probability matrices will be initialized to a uniform distribution
-	 *
-	 * @param emit_prob emission matrix with dimensions n x k
-	 */
 	HMM(int num_states, int num_emissions);
 
 	HMM(std::vector<std::vector<mpf_class> >& emit_prob);
 
+	friend std::ostream& operator << (std::ostream& os, const HMM& hmm);
+
 	std::pair<std::vector<std::vector<mpf_class> >, std::vector<mpf_class> > generate_forwards(std::vector<int>& obs_seq);
 
-	std::vector<std::vector<mpf_class> > generate_backwards(std::vector<int>& obs_seq, std::vector<mpf_class> scale_factors);
+	std::vector<std::vector<mpf_class> > generate_backwards(std::vector<int>& obs_seq, std::vector<mpf_class>& scale_factors);
 
 	mpf_class evaluate(std::vector<int>& obs_seq);
 
-	std::vector<std::vector<mpf_class> > generate_gamma(std::vector<int>& obs_seq, std::vector<mpf_class> alpha, std::vector<mpf_class> beta);
+	std::vector<std::vector<mpf_class> > generate_gamma(std::vector<int>& obs_seq, std::vector<std::vector<mpf_class> >& alpha, std::vector<std::vector<mpf_class> >& beta, std::vector<mpf_class>& scale_factors);
 
-	std::vector<std::vector<std::vector<mpf_class> > > generate_epsilon(std::vector<int>& obs_seq, std::vector<mpf_class> alpha, std::vector<mpf_class> beta);
+	std::vector<std::vector<std::vector<mpf_class> > > generate_epsilon(std::vector<int>& obs_seq, std::vector<std::vector<mpf_class> >& alpha, std::vector<std::vector<mpf_class> >& beta, std::vector<mpf_class>& scale_factors);
 
-	void train(std::vector<int> obs_seq);
+	void baum_welch(std::vector<int>& obs_seq);
+
+	void multi_baum_welch(std::vector<std::vector<int> >& obs_seqs);
 
 };
 
