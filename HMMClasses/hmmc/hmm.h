@@ -2,6 +2,7 @@
 #include <vector>
 #include <gmp.h>
 #include <gmpxx.h>
+#include "mpreal.h"
 
 #ifndef HMM_H
 #define HMM_H
