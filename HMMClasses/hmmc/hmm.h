@@ -36,7 +36,7 @@ public:
 
 	mpfr::mpreal evaluate(std::vector<int>& obs_seq);
 
-	std::vector<std::vector<mpfr::mpreal> > generate_gamma(std::vector<int>& obs_seq, std::vector<std::vector<mpfr::mpreal> >& alpha, std::vector<std::vector<mpfr::mpreal> >& beta, std::vector<mpfr::mpreal>& scale_factors);
+	std::vector<std::vector<mpfr::mpreal> > generate_gamma(std::vector<int>& obs_seq, std::vector<std::vector<std::vector<mpfr::mpreal> > > epsilon, std::vector<mpfr::mpreal>& scale_factors);
 
 	std::vector<std::vector<std::vector<mpfr::mpreal> > > generate_epsilon(std::vector<int>& obs_seq, std::vector<std::vector<mpfr::mpreal> >& alpha, std::vector<std::vector<mpfr::mpreal> >& beta, std::vector<mpfr::mpreal>& scale_factors);
 
