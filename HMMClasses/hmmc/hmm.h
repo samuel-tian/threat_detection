@@ -2,6 +2,7 @@
 #include <vector>
 #include <gmp.h>
 #include <gmpxx.h>
+#include <mpfr.h>
 #include "mpreal.h"
 
 #ifndef HMM_H
@@ -43,6 +44,8 @@ public:
 	void baum_welch(std::vector<int>& obs_seq);
 
 	void multi_baum_welch(std::vector<std::vector<int> >& obs_seqs);
+
+	std::vector<int> viterbi(std::vector<int>& obs_seq);
 
 };
 
