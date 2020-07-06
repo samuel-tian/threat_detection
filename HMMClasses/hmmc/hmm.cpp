@@ -335,6 +335,11 @@ void HMM::baum_welch(std::vector<int>& obs_seq) {
 	std::vector<matrix<mpfr::mpreal> > epsilon = this->generate_epsilon(obs_seq, alpha, beta, scale_factors);
 	matrix<mpfr::mpreal> gamma = this->generate_gamma(obs_seq, epsilon, scale_factors);
 
+	for (int i = 0; i < t; i++) {
+		std::cout << scale_factors[i] << " ";
+	}
+	std::cout << '\n';
+
 	// re-estimate initial state probabilities
 	mpfr::mpreal gammasum = 0;
 	for (int i = 0; i < n; i++) {
@@ -512,6 +517,42 @@ std::vector<int> HMM::viterbi(std::vector<int>& obs_seq) {
 	return answer;
 }
 
+void HMM::segment_init(std::vector<int>& obs_seq) {
+	int n = this->N;
+	int k = this->K;
+	int t = obs_seq.size();
+
+	std::vector<int> state_seq = this->viterbi(obs_seq);
+	std::vector<std::vector<mpfr::mpreal> > state_obs_count(n, std::vector<mpfr::mpreal>(k));
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < k; j++) {
+			state_obs_count[i][j] = 10;
+		}
+	}
+	for (int i = 0; i < t; i++) {
+		state_obs_count[state_seq[i]][obs_seq[i]]++;
+	}
+	for (int i = 0; i < n; i++) {
+		mpfr::mpreal emitsum = 0;
+		for (int j = 0; j < k; j++) {
+			emitsum += state_obs_count[i][j];
+		}
+		for (int j = 0; j < k; j++) {
+			this->emit_prob[i][j] = state_obs_count[i][j] / emitsum;
+		}
+	}
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < k; j++) {
+			std::cout << state_obs_count[i][j] << " ";
+		}
+		std::cout << '\n';
+	}
+}
+
+void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
+
+}
+
 int main() {
 	std::chrono::high_resolution_clock::time_point t0_final = std::chrono::high_resolution_clock::now(); // time before execution
 
@@ -521,8 +562,8 @@ int main() {
 	std::cout << "PRECISION: " << mpfr::mpreal::get_default_prec() << "\n";
 
 	int n = 5;
-	int k = 250;
-	int t = 1000;
+	int k = 50;
+	int t = 500;
 	matrix<mpfr::mpreal> emit_prob;
 
 	//  Mersene twister, which is a random number generator that has better performance than C++ rand() / srand()
@@ -544,38 +585,31 @@ int main() {
 		}
 	}
 	HMM hmm(emit_prob);
+	HMM hmm2(emit_prob);
 
+	/*
 	// testing single observation sequence
 	std::vector<int> obs_seq(t);
 	for (int i = 0; i < t; i++) {
 		obs_seq[i] = generator() % k;
 	}
-	for (int iteration = 0; iteration < 1; iteration++) {
+	for (int iteration = 0; iteration < 30; iteration++) {
 		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
 		if (iteration == 0) {
 			std::cout << "BEFORE\n";
-			std::cout << hmm << '\n';
+			// std::cout << hmm << '\n';
 			std::cout << hmm.evaluate(obs_seq) << '\n';
 			std::cout << "\n------------------\n\n";
 		}
 
 		hmm.baum_welch(obs_seq);
 		std::cout << "ITERATION " << iteration+1 << '\n';
-		std::cout << hmm << '\n';
+		// std::cout << hmm << '\n';
 		std::cout << hmm.evaluate(obs_seq) << '\n';
 
 		std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now(); // time after execution
 		std::cout << "EXECUTION TIME " << iteration+1 << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << "\n"; // time elapsed
 		std::cout << "\n------------------\n\n";
-	}
-
-	/*
-	// testing Viterbi's algorithm
-	std::vector<int> max_likelihood = hmm.viterbi(obs_seq);
-	for (int i = 0; i < t; i++) {
-		std::cout << max_likelihood[i] << " ";
-		if (i == t-1)
-			std::cout << '\n';
 	}
 	*/
 
@@ -622,6 +656,63 @@ int main() {
 		std::cout << "\n------------------\n\n";
 	}
 	*/
+
+	/*
+	// testing Viterbi's algorithm
+	std::vector<int> max_likelihood = hmm.viterbi(obs_seq);
+	for (int i = 0; i < t; i++) {
+		std::cout << max_likelihood[i] << " ";
+		if (i == t-1)
+			std::cout << '\n';
+	}
+	*/
+
+	// testing emission matrix initialization
+	std::vector<int> obs_seq(t);
+	for (int i = 0; i < t; i++) {
+		obs_seq[i] = generator() % k;
+	}
+	for (int iteration = 0; iteration < 2; iteration++) {
+		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
+		if (iteration == 0) {
+			std::cout << "BEFORE\n";
+			std::cout << hmm << '\n';
+			std::cout << hmm.evaluate(obs_seq) << '\n';
+			std::cout << "\n------------------\n\n";
+		}
+
+		hmm.segment_init(obs_seq);
+		std::cout << "ITERATION " << iteration+1 << '\n';
+		// std::cout << hmm << '\n';
+		std::cout << hmm.evaluate(obs_seq) << '\n';
+
+		std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now(); // time after execution
+		std::cout << "EXECUTION TIME " << iteration+1 << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << "\n"; // time elapsed
+		std::cout << "\n------------------\n\n";
+	}
+	for (int iteration = 0; iteration < 30; iteration++) {
+		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
+		if (iteration == 0) {
+			std::cout << "BEFORE\n";
+			// std::cout << hmm << '\n';
+			std::cout << hmm.evaluate(obs_seq) << '\n';
+			std::cout << hmm2.evaluate(obs_seq) << '\n';
+			std::cout << "\n------------------\n\n";
+		}
+
+		hmm.baum_welch(obs_seq);
+		hmm2.baum_welch(obs_seq);
+		std::cout << "ITERATION " << iteration+1 << '\n';
+		// std::cout << hmm << '\n';
+		std::cout << hmm.evaluate(obs_seq) << '\n';
+		std::cout << hmm2.evaluate(obs_seq) << '\n';
+
+		std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now(); // time after execution
+		std::cout << "EXECUTION TIME " << iteration+1 << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << "\n"; // time elapsed
+		std::cout << "\n------------------\n\n";
+	}
+	std::cout << hmm << '\n';
+	std::cout << hmm2 << '\n';
 
 	std::chrono::high_resolution_clock::time_point t1_final = std::chrono::high_resolution_clock::now(); // time after execution
 	std::cout << "TOTAL EXECUTION TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1_final - t0_final).count() << " ms" << "\n"; // time elapsed

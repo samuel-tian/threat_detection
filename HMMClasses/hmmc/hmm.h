@@ -47,6 +47,10 @@ public:
 
 	std::vector<int> viterbi(std::vector<int>& obs_seq);
 
+	void segment_init(std::vector<int>& obs_seq);
+
+	void multi_segment_init(std::vector<std::vector<int> >& obs_seqs);
+
 };
 
 #endif
