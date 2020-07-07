@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <utility>
 #include <vector>
 #include <gmp.h>
@@ -7,13 +8,6 @@
 
 #ifndef HMM_H
 #define HMM_H
-
-template<typename R, typename S, typename T>
-struct triplet {
-	R first;
-	S second;
-	T third;
-};
 
 class HMM {
 public:
@@ -53,4 +47,4 @@ public:
 
 };
 
-#endif
+#endif // HMM_H
