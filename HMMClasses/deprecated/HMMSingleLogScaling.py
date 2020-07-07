@@ -46,7 +46,7 @@ class HMMScaling:
 	def __init__(self, *args):
 		"""Initializes HMM
 
-		args[5]: (obs, states, initial state prob, transition prob, emit prob)	
+		args[5]: (obs, states, initial state prob, transition prob, emit prob)
 		args[1]: (emit prob)
 		args[2]: (number of states, number of coordinates)
 		"""
@@ -55,7 +55,7 @@ class HMMScaling:
 			self.states = args[1]
 			self.init_prob = args[2]
 			self.trans_prob = args[3]
-			self.emit_prob = args[4]	
+			self.emit_prob = args[4]
 		else:
 			n = 0 # number of states
 			k = 0 # number of observations
@@ -155,7 +155,7 @@ class HMMScaling:
 					logbeta = EE.elnsum(logbeta, EE.elnproduct(self.trans_prob[j][nex], EE.elnproduct(self.emit_prob[nex][obs_seq[i+1]], dp[i+1][j])))
 				dp[i][j] = logbeta
 		return dp
-	
+
 	def evaluate(self, obs_seq):
 		"""Determines the probability of seeing obs_seq given the current model paramters
 
@@ -213,7 +213,7 @@ class HMMScaling:
 			normalizer = float('nan')
 			for j in range(n):
 				for l in range(n):
-					epsilon[i][j][l] = EE.elnproduct(alpha[i][j], EE.elnproduct(self.trans_prob[j][l], 
+					epsilon[i][j][l] = EE.elnproduct(alpha[i][j], EE.elnproduct(self.trans_prob[j][l],
 						EE.elnproduct(self.emit_prob[l][obs_seq[i+1]], beta[i+1][l])))
 					normalizer = EE.elnsum(normalizer, epsilon[i][j][l])
 			for j in range(n):
@@ -225,7 +225,7 @@ class HMMScaling:
 		"""Updates the paramters of the model to maximize the probability of seeing the sequence obs_seq
 
 		Memory Complexity: O(T * N^2)
-		Time Complexity: O(T * N^2 + N * K (*T, can be optimized out))	
+		Time Complexity: O(T * N^2 + N * K (*T, can be optimized out))
 		"""
 		n = self.states.size
 		k = self.obs.size
@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
 	tmp = []
 	for i in range(15):
-		tmp.append(n * randint(0, k-1) + randint(0, k-1))
+		tmp.append(k * randint(0, k-1) + randint(0, k-1))
 	obs_seq = np.empty(shape=len(tmp), dtype='O')
 	obs_seq[:] = tmp
 	print(obs_seq)
@@ -292,7 +292,7 @@ if __name__ == "__main__":
 	print(identifier.evaluate(obs_seq))
 
 	for i in range(100):
-		identifier.baum_welch(obs_seq)	
+		identifier.baum_welch(obs_seq)
 		# print(identifier)
 		print(identifier.evaluate(obs_seq))
 

@@ -254,6 +254,7 @@ if __name__ == "__main__":
     trajectories.append(trajectory) #specify the optional parameters so we know which file is which
     write_trajectories_to_file(trajectories)
     read_in_trajectories = read_trajectories_from_file("sampleTrajectory_0[].txt")
+    display_trajectory(read_in_trajectories[0])
     #listFile = open("sampleTrajectory_0[].txt")
     #list = listFile.readline()
     #print(list)
