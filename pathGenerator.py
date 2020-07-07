@@ -249,7 +249,7 @@ def display_trajectory(trajectory):
 
 
 if __name__ == "__main__":
-    trajectory = generate_circling_points(10, (50, 10, 10, 10, 10, 10, 0, 0, 0, 0)) #example
+    trajectory = generate_chase_points(100, (50, 10, 10, 10, 10, 10, 0, 0, 0, 0)) #example
     trajectories = []
     trajectories.append(trajectory) #specify the optional parameters so we know which file is which
     write_trajectories_to_file(trajectories)
