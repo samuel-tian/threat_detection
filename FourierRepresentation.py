@@ -1,7 +1,24 @@
 from numpy.fft import *
 import numpy as np
-from pathGenerator import *
+import pathGenerator
 import matplotlib.pyplot as plt
+
+def Nmaxelements(list1, N):
+    final_list = []
+
+    for i in range(0, N):
+        max1 = 0
+
+        for j in range(len(list1)):
+            if list1[j] > max1:
+                max1 = list1[j];
+
+        list1.remove(max1);
+        final_list.append(max1)
+
+    return final_list
+
+
 
 def rectify(data):
     #returns data minus the line that connects the two endpoints, gives the formula for the line
@@ -14,7 +31,8 @@ def rectify(data):
         newData.append(newValue)
     return (newData, slope, b)
 
-def findFourierRepresentation(augmented_data, k=1.0, L=20):
+
+def findFourierRepresentation(augmented_data, k=1.0, L=40):
     #gives first L coefficients of the Fourier series for augmented_data, with precision 1 / k (i.e. if k = 4, we can determine relative intensities for 0.25 Hz, 0.5 Hz, 0.75 Hz, ..., 0.25*L Hz)
     #it is assumed that augmented_data[0] = 0, so the nth coefficient always refers to the sin(n*2*pi*x) term
     #returns a dictionary mapping select frequencies to their relative intensities, adds future flexibility if we only want to see intensities for select frequencies.
@@ -37,7 +55,7 @@ def findFourierRepresentation(augmented_data, k=1.0, L=20):
     frequency_dictionary = {}
     for j in range(L + 1):
         frequency_dictionary[(j / k)] = frequency_values[j]
-        print(frequency_values[j])
+        #print(frequency_values[j])
 
     return frequency_dictionary
 
@@ -63,18 +81,57 @@ def display1D(approximationFunction, actualData):
     plt.grid()
     plt.show()
 
+def determineOptimal(frequency_dictionary, slope, b, numPoints, actualData, N=10):
+    #calculates the approximation that minimizes the sum of the N, biggest pointwise differences between the original data
+    approximation_1 = generateApproximation(frequency_dictionary, slope, b, numPoints)
+    for key in frequency_dictionary:
+        frequency_dictionary[key] = -1.0 * frequency_dictionary[key]
+    approximation_2 = generateApproximation(frequency_dictionary, slope, b, numPoints)
+    approximation_1_difference = []
+    approximation_2_difference = []
+    for i in range(len(actualData)):
+        approximation_1_difference.append(np.abs(approximation_1[i] - actualData[i]))
+        approximation_2_difference.append(np.abs(approximation_2[i] - actualData[i]))
+
+    max_elts_1 = Nmaxelements(approximation_1_difference, N)
+    max_elts_2 = Nmaxelements(approximation_2_difference, N)
+
+    if sum(max_elts_1) > sum(max_elts_2):
+        return approximation_2
+    else:
+        return approximation_1
+
+
+
+
+
 
 
 
 if __name__ == "__main__":
-    read_in_trajectories = read_trajectories_from_file("sampleTrajectory_0[].txt")
+    pathGenerator
+    read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
     x_vals = [point[0] for point in read_in_trajectories[0]]
-    #y_vals = [point[1] for point in read_in_trajectories[0]]
-    augmented_data = rectify(x_vals)
-    frequencies = findFourierRepresentation(augmented_data[0])
-    approximation = generateApproximation(frequencies, augmented_data[1], augmented_data[2], len(x_vals))
-    display1D(approximation, x_vals)
-    for key in frequencies:
-        frequencies[key] = -1.0 * frequencies[key]
-    approximation = generateApproximation(frequencies, augmented_data[1], augmented_data[2], len(x_vals))
-    display1D(approximation, x_vals)
+    y_vals = [point[1] for point in read_in_trajectories[0]]
+    augmented_data_x = rectify(x_vals)
+    augmented_data_y  = rectify(y_vals)
+    frequencies_x = findFourierRepresentation(augmented_data_x[0])
+    frequencies_y = findFourierRepresentation(augmented_data_y[0])
+    approximation_x = determineOptimal(frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals), x_vals)
+    approximation_y = determineOptimal(frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals), y_vals)
+
+    #display1D(approximation_x, x_vals)
+    #display1D(approximation_y, y_vals)
+
+    parameterized_trajectory = []
+    for i in range(len(approximation_x)):
+        parameterized_trajectory.append((approximation_x[i], approximation_y[i]))
+
+    plt.plot(x_vals, y_vals, 'o', color='black')
+    plt.plot(approximation_x, approximation_y, 'o', color="orange")
+    plt.show()
+
+
+
+    #parameterized_trajectory = (approximation_x, approximation_y)
+    #pathGenerator.display_trajectory(parameterized_trajectory)

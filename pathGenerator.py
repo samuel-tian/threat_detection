@@ -172,8 +172,9 @@ def generate_circling_points(scale, prob_distribution):
     possible_moves = [(0, 0), (0, 1), (0, -1), (1, 0), (1, 1), (1, -1), (-1, 0), (-1, 1), (-1, -1)] #displacement vectors
 
     #we now create the trajectory
+    radius = int(math.sqrt(current_pos[0]**2 + current_pos[1]**2))
     trajectory = [starting_pos]
-    for i in range(8*scale):
+    for i in range(10*radius):
         if rotation_direction == "CW":
             target_vector = (current_pos[1], -1*current_pos[0])
         else:
@@ -249,7 +250,7 @@ def display_trajectory(trajectory):
 
 
 if __name__ == "__main__":
-    trajectory = generate_chase_points(100, (50, 10, 10, 10, 10, 10, 0, 0, 0, 0)) #example
+    trajectory = generate_circling_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
     trajectories = []
     trajectories.append(trajectory) #specify the optional parameters so we know which file is which
     write_trajectories_to_file(trajectories)
