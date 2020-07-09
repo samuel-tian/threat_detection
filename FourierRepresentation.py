@@ -99,9 +99,10 @@ def display1D(approximationFunction, actualData):
 def determineOptimal(frequency_dictionary, slope, b, numPoints, actualData, N=10):
     #calculates the approximation that minimizes the sum of the N, biggest pointwise differences between the original data
     approximation_1 = generateApproximation(frequency_dictionary, slope, b, numPoints)
+    negative_frequency_dictionary = {}
     for key in frequency_dictionary:
-        frequency_dictionary[key] = -1.0 * frequency_dictionary[key]
-    approximation_2 = generateApproximation(frequency_dictionary, slope, b, numPoints)
+        negative_frequency_dictionary[key] = -1.0 * frequency_dictionary[key]
+    approximation_2 = generateApproximation(negative_frequency_dictionary, slope, b, numPoints)
     approximation_1_difference = []
     approximation_2_difference = []
     for i in range(len(actualData)):
@@ -112,54 +113,47 @@ def determineOptimal(frequency_dictionary, slope, b, numPoints, actualData, N=10
     max_elts_2 = Nmaxelements(approximation_2_difference, N)
 
     if sum(max_elts_1) > sum(max_elts_2):
-        return approximation_2
+        return negative_frequency_dictionary
     else:
-        return approximation_1
+        return frequency_dictionary
 
 
 
-
-
-
-
-
-if __name__ == "__main__":
-    
-    read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
-    x_vals = [point[0] for point in read_in_trajectories[0]]
-    y_vals = [point[1] for point in read_in_trajectories[0]]
+def processTrajectory(trajectory):
+    #returns a tuple of tuples ( (frequency_dictionary_x, slope_x, b_x, numPoints_x), (frequency_dictionary_y, slope_y, b_y, numPoints_y) ) needed for generating the approximation
+    x_vals = [point[0] for point in trajectory]
+    y_vals = [point[1] for point in trajectory]
     augmented_data_x = rectify(x_vals)
     augmented_data_y  = rectify(y_vals)
 
     frequencies_x = postProcessFrequencyDictionary(findFourierRepresentation(preProcessAugmentedData(augmented_data_x[0])))
     frequencies_y = postProcessFrequencyDictionary(findFourierRepresentation(preProcessAugmentedData(augmented_data_y[0])))
 
-    #frequencies_x = findFourierRepresentation(augmented_data_x[0])
-    #frequencies_y = findFourierRepresentation(augmented_data_y[0])
+    frequencies_x = determineOptimal(frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals), x_vals)
+    frequencies_y = determineOptimal(frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals), y_vals)
 
+    #display1D(approximation_x, x_vals)
+    #display1D(approximation_y, y_vals)
 
-    approximation_x = determineOptimal(frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals), x_vals)
-    approximation_y = determineOptimal(frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals), y_vals)
+    return ( (frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals)) , (frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals)) )
 
-    display1D(approximation_x, x_vals)
-    display1D(approximation_y, y_vals)
+def display_approximation(approximation_parameters):
+    approximation_x = generateApproximation(approximation_parameters[0][0], approximation_parameters[0][1], approximation_parameters[0][2], approximation_parameters[0][3])
 
-    parameterized_trajectory = []
-    for i in range(len(approximation_x)):
-        parameterized_trajectory.append((approximation_x[i], approximation_y[i]))
+    approximation_y = generateApproximation(approximation_parameters[1][0], approximation_parameters[1][1], approximation_parameters[1][2], approximation_parameters[1][3])
 
-
-
-    plt.plot(x_vals, y_vals, 'o', color='black')
     plt.plot(approximation_x, approximation_y, 'o', color="orange")
     plt.show()
 
 
-    #plt.plot(np.linspace(0, 1, len(preProcessAugmentedData(augmented_data_y[0]))),  preProcessAugmentedData(augmented_data_y[0])  )
-    #print(findFourierRepresentation(preProcessAugmentedData(augmented_data_y[0])))
-    #plt.show()
 
 
+if __name__ == "__main__":
 
-    #parameterized_trajectory = (approximation_x, approximation_y)
-    #pathGenerator.display_trajectory(parameterized_trajectory)
+    read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
+
+    approximation_parameters = processTrajectory(read_in_trajectories[0])
+    #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization 
+    #approximation_parameters is how we store / move around the approximation of the given trajectory
+
+    display_approximation(approximation_parameters)
