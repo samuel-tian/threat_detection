@@ -174,7 +174,7 @@ def generate_circling_points(scale, prob_distribution):
     #we now create the trajectory
     radius = int(math.sqrt(current_pos[0]**2 + current_pos[1]**2))
     trajectory = [starting_pos]
-    for i in range(10*radius):
+    for i in range(8*radius):
         if rotation_direction == "CW":
             target_vector = (current_pos[1], -1*current_pos[0])
         else:

@@ -18,7 +18,22 @@ def Nmaxelements(list1, N):
 
     return final_list
 
+def preProcessAugmentedData(augmentedData):
+    #takes augmented position values, essentially doubles it and compresses it so that the frequency is higher
+    newData = []
+    for i in range(len(augmentedData) - 1, -1, -1):
+        newData.append(-1*augmentedData[i])
+    for i in range(len(augmentedData)):
+        newData.append(augmentedData[i])
 
+    return newData
+
+def postProcessFrequencyDictionary(frequency_dictionary):
+    #must be run after the preProcessAugmentedData, basically divides all the frequencies by 2
+    new_dict = {}
+    for key in frequency_dictionary:
+        new_dict[(key/2)] = frequency_dictionary[key]
+    return new_dict
 
 def rectify(data):
     #returns data minus the line that connects the two endpoints, gives the formula for the line
@@ -48,7 +63,7 @@ def findFourierRepresentation(augmented_data, k=1.0, L=40):
     frequency_values = 2.0/N * np.abs(augmented_data_f[0:N//2]) #when T = (k / N) the jth value here corresponds to a (j / k) hertz sin wave
     for i in range(len(frequency_values)):
         frequency_values[i] = np.sign(np.real(augmented_data_f[i])) * frequency_values[i] #enforces the sign of the sin wave
-        frequency_values[i] = frequency_values[i] * -1
+        #frequency_values[i] = frequency_values[i] * -1
         #print(frequency_values[i])
 
     #we can select which frequencies to output
@@ -109,27 +124,40 @@ def determineOptimal(frequency_dictionary, slope, b, numPoints, actualData, N=10
 
 
 if __name__ == "__main__":
-    pathGenerator
+    
     read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
     x_vals = [point[0] for point in read_in_trajectories[0]]
     y_vals = [point[1] for point in read_in_trajectories[0]]
     augmented_data_x = rectify(x_vals)
     augmented_data_y  = rectify(y_vals)
-    frequencies_x = findFourierRepresentation(augmented_data_x[0])
-    frequencies_y = findFourierRepresentation(augmented_data_y[0])
+
+    frequencies_x = postProcessFrequencyDictionary(findFourierRepresentation(preProcessAugmentedData(augmented_data_x[0])))
+    frequencies_y = postProcessFrequencyDictionary(findFourierRepresentation(preProcessAugmentedData(augmented_data_y[0])))
+
+    #frequencies_x = findFourierRepresentation(augmented_data_x[0])
+    #frequencies_y = findFourierRepresentation(augmented_data_y[0])
+
+
     approximation_x = determineOptimal(frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals), x_vals)
     approximation_y = determineOptimal(frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals), y_vals)
 
-    #display1D(approximation_x, x_vals)
-    #display1D(approximation_y, y_vals)
+    display1D(approximation_x, x_vals)
+    display1D(approximation_y, y_vals)
 
     parameterized_trajectory = []
     for i in range(len(approximation_x)):
         parameterized_trajectory.append((approximation_x[i], approximation_y[i]))
 
+
+
     plt.plot(x_vals, y_vals, 'o', color='black')
     plt.plot(approximation_x, approximation_y, 'o', color="orange")
     plt.show()
+
+
+    #plt.plot(np.linspace(0, 1, len(preProcessAugmentedData(augmented_data_y[0]))),  preProcessAugmentedData(augmented_data_y[0])  )
+    #print(findFourierRepresentation(preProcessAugmentedData(augmented_data_y[0])))
+    #plt.show()
 
 
 
