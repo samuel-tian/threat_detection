@@ -73,7 +73,7 @@ def findFourierRepresentation(augmented_data, k=1.0, L=20):
 
     #we can select which frequencies to output
     frequency_dictionary = {}
-    for j in range(L + 1):
+    for j in range(1, L + 1):
         frequency_dictionary[(j / k)] = frequency_values[j]
         #print(frequency_values[j])
 
