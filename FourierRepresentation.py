@@ -2,6 +2,11 @@ from numpy.fft import *
 import numpy as np
 import pathGenerator
 import matplotlib.pyplot as plt
+import math
+
+def sigmoid(x):
+    #take real number x to the output interval (0, 1)
+  return 1 / (1 + math.exp(-x))
 
 def Nmaxelements(list1, N):
     final_list = []
@@ -47,7 +52,7 @@ def rectify(data):
     return (newData, slope, b)
 
 
-def findFourierRepresentation(augmented_data, k=1.0, L=40):
+def findFourierRepresentation(augmented_data, k=1.0, L=20):
     #gives first L coefficients of the Fourier series for augmented_data, with precision 1 / k (i.e. if k = 4, we can determine relative intensities for 0.25 Hz, 0.5 Hz, 0.75 Hz, ..., 0.25*L Hz)
     #it is assumed that augmented_data[0] = 0, so the nth coefficient always refers to the sin(n*2*pi*x) term
     #returns a dictionary mapping select frequencies to their relative intensities, adds future flexibility if we only want to see intensities for select frequencies.
@@ -145,6 +150,33 @@ def display_approximation(approximation_parameters):
     plt.plot(approximation_x, approximation_y, 'o', color="orange")
     plt.show()
 
+def write_approximations_to_file(list_of_approximation_parameters, trajectoryType):
+    name = trajectoryType + ".txt"
+    outputFile = open(name, "w")
+    numKeys = len(list_of_approximation_parameters[0][0][0].keys())
+    parameterization_length = numKeys*2 + 5
+    num_parameterizations = len(list_of_approximation_parameters)
+
+    outputFile.write(str(num_parameterizations) + " " + str(parameterization_length) + "\n")
+
+    for approximation_parameters in list_of_approximation_parameters:
+        numPoints = approximation_parameters[0][3]
+        outputFile.write(str(sigmoid(numPoints)) + "\n")
+        outputFile.write(str(sigmoid(approximation_parameters[0][1])) + "\n")
+        outputFile.write(str(sigmoid(approximation_parameters[1][1])) + "\n")
+        outputFile.write(str(sigmoid(approximation_parameters[0][2])) + "\n")
+        outputFile.write(str(sigmoid(approximation_parameters[1][2])) + "\n")
+
+        for key in approximation_parameters[0][0]:
+            outputFile.write(str(sigmoid(approximation_parameters[0][0][key])) + "\n")
+            outputFile.write(str(sigmoid(approximation_parameters[1][0][key])) + "\n")
+
+    outputFile.close()
+
+
+
+
+
 
 
 
@@ -153,7 +185,12 @@ if __name__ == "__main__":
     read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
 
     approximation_parameters = processTrajectory(read_in_trajectories[0])
-    #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization 
+    #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization
     #approximation_parameters is how we store / move around the approximation of the given trajectory
 
     display_approximation(approximation_parameters)
+
+    list_of_approximation_parameters = []
+    list_of_approximation_parameters.append(approximation_parameters)
+
+    write_approximations_to_file(list_of_approximation_parameters, "sample_approximation")
