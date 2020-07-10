@@ -150,6 +150,23 @@ def display_approximation(approximation_parameters):
     plt.plot(approximation_x, approximation_y, 'o', color="orange")
     plt.show()
 
+def display_approximation_plus_original_trajectory(approximation_parameters, originalTrajectory):
+    x = []
+    y = []
+    for point in originalTrajectory:
+        if point[0] != "invisible":
+            x.append(point[0])
+            y.append(point[1])
+
+    approximation_x = generateApproximation(approximation_parameters[0][0], approximation_parameters[0][1], approximation_parameters[0][2], approximation_parameters[0][3])
+
+    approximation_y = generateApproximation(approximation_parameters[1][0], approximation_parameters[1][1], approximation_parameters[1][2], approximation_parameters[1][3])
+
+    plt.plot(x, y, 'o', color='black')
+    plt.plot(approximation_x, approximation_y, 'o', color="orange")
+    plt.show()
+
+
 def write_approximations_to_file(list_of_approximation_parameters, trajectoryType):
     name = trajectoryType + ".txt"
     outputFile = open(name, "w")
@@ -175,11 +192,6 @@ def write_approximations_to_file(list_of_approximation_parameters, trajectoryTyp
 
 
 
-
-
-
-
-
 if __name__ == "__main__":
 
     read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
@@ -188,7 +200,8 @@ if __name__ == "__main__":
     #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization
     #approximation_parameters is how we store / move around the approximation of the given trajectory
 
-    display_approximation(approximation_parameters)
+    display_approximation_plus_original_trajectory(approximation_parameters, read_in_trajectories[0])
+    #use display_approximation for just displaying the approximation generated from approximation_parameters
 
     list_of_approximation_parameters = []
     list_of_approximation_parameters.append(approximation_parameters)
