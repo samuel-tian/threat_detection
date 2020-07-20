@@ -11,7 +11,14 @@
 template<typename T>
 using matrix = std::vector<std::vector<T> >;
 
-void read(std::string s) {
+void read_unsegmented(std::string s) {
+	std::ifstream in("data/" + s + "_unseg.dat");
+	std::ofstream out("data/" + s + "_seg.dat");
+	using namespace kmeans;
+	
+}
+
+void read_segmented(std::string s) {
 	std::ifstream in("data/" + s + ".dat");
 	std::ofstream out("data/" + s + "HMM.dat");
 	using namespace kmeans;
@@ -74,6 +81,6 @@ void read(std::string s) {
 int main() {
 	kmeans::set_threshold(0.0001);
 
-	// read("normal");
-	// read("following");	
+	read("normal");
+	read("circling");	
 }

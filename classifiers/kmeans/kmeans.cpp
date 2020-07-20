@@ -162,7 +162,7 @@ namespace kmeans {
 
 }
 
-int main() {
+/*int main() {
 	using namespace kmeans;
 
 	std::ofstream out("clustered.dat", std::ofstream::out);
@@ -198,4 +198,4 @@ int main() {
 		}
 	}
 	return 0;
-}
+}*/
