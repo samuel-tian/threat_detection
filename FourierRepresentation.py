@@ -189,7 +189,7 @@ def write_approximations_to_file(list_of_approximation_parameters_plus_centroid,
 
         outputFile.write(str(x_centroid) + "\n")
         outputFile.write(str(y_centroid) + "\n")
-        outputFile.write(str(sigmoid(numPoints)) + "\n")
+        outputFile.write(str(numPoints) + "\n")
         outputFile.write(str(sigmoid(approximation_parameters[0][1])) + "\n")
         outputFile.write(str(sigmoid(approximation_parameters[1][1])) + "\n")
         outputFile.write(str(sigmoid(approximation_parameters[0][2])) + "\n")
@@ -218,7 +218,7 @@ def pathCentroid(trajectory):
 
 if __name__ == "__main__":
 
-    read_in_trajectories = pathGenerator.read_trajectories_from_file("random_path_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0).txt")
+    read_in_trajectories = pathGenerator.read_trajectories_from_file("circling_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0).txt")
 
     #approximation_parameters = processTrajectory(read_in_trajectories[0])
     #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization
@@ -232,4 +232,4 @@ if __name__ == "__main__":
     for trajectory in read_in_trajectories:
         approximation_parameters = processTrajectory(read_in_trajectories[0])
         list_of_approximation_parameters_plus_centroid.append( (approximation_parameters, pathCentroid(trajectory)) )
-    write_approximations_to_file(list_of_approximation_parameters_plus_centroid, "random_path_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0)_sample_approximation")
+    write_approximations_to_file(list_of_approximation_parameters_plus_centroid, "circling_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0)_sample_approximation")
