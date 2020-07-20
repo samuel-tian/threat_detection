@@ -220,6 +220,7 @@ def read_trajectories_from_file(filename):
         numPointsRead = 0
         while numPointsRead < numPointsPerTrajectory:
             line = trajectoryFile.readline()
+            #print(numTrajectoriesRead)
             point = ( int(line[0:line.index(" ")]), int(line[line.index(" ") + 1:]) )
             trajectories[numTrajectoriesRead].append(point)
             numPointsRead += 1
@@ -250,12 +251,17 @@ def display_trajectory(trajectory):
 
 
 if __name__ == "__main__":
-    trajectory = generate_circling_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
+    #trajectory = generate_circling_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
     trajectories = []
-    trajectories.append(trajectory) #specify the optional parameters so we know which file is which
-    write_trajectories_to_file(trajectories)
-    read_in_trajectories = read_trajectories_from_file("sampleTrajectory_0[].txt")
-    display_trajectory(read_in_trajectories[0])
+    for i in range(400):
+        trajectory = generate_random_path_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
+        trajectories.append(trajectory)
+        print(i)
+
+    #trajectories.append(trajectory) #specify the optional parameters so we know which file is which
+    write_trajectories_to_file(trajectories, type="random_path", numLines=400, prob_dist=(20, 15, 15, 10, 10, 10, 10, 10, 0, 0))
+    #read_in_trajectories = read_trajectories_from_file("sampleTrajectory_0[].txt")
+    #display_trajectory(read_in_trajectories[0])
     #listFile = open("sampleTrajectory_0[].txt")
     #list = listFile.readline()
     #print(list)

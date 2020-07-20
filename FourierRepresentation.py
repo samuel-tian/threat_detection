@@ -167,17 +167,28 @@ def display_approximation_plus_original_trajectory(approximation_parameters, ori
     plt.show()
 
 
-def write_approximations_to_file(list_of_approximation_parameters, trajectoryType):
+def write_approximations_to_file(list_of_approximation_parameters_plus_centroid, trajectoryType):
+    list_of_approximation_parameters = []
+    for tuple in list_of_approximation_parameters_plus_centroid:
+        list_of_approximation_parameters.append(tuple[0])
+
     name = trajectoryType + ".txt"
     outputFile = open(name, "w")
     numKeys = len(list_of_approximation_parameters[0][0][0].keys())
-    parameterization_length = numKeys*2 + 5
+    parameterization_length = numKeys*2 + 7
     num_parameterizations = len(list_of_approximation_parameters)
 
     outputFile.write(str(num_parameterizations) + " " + str(parameterization_length) + "\n")
 
-    for approximation_parameters in list_of_approximation_parameters:
+    for approximation_parameters_plus_centroid in list_of_approximation_parameters_plus_centroid:
+        approximation_parameters = approximation_parameters_plus_centroid[0]
+        x_centroid = approximation_parameters_plus_centroid[1][0]
+        y_centroid = approximation_parameters_plus_centroid[1][1]
+
         numPoints = approximation_parameters[0][3]
+
+        outputFile.write(str(x_centroid) + "\n")
+        outputFile.write(str(y_centroid) + "\n")
         outputFile.write(str(sigmoid(numPoints)) + "\n")
         outputFile.write(str(sigmoid(approximation_parameters[0][1])) + "\n")
         outputFile.write(str(sigmoid(approximation_parameters[1][1])) + "\n")
@@ -190,20 +201,35 @@ def write_approximations_to_file(list_of_approximation_parameters, trajectoryTyp
 
     outputFile.close()
 
+def pathCentroid(trajectory):
+    x = []
+    y = []
+    for point in trajectory:
+        if point[0] != "invisible":
+            x.append(point[0])
+            y.append(point[1])
+    x_average = sum(x)/len(x)
+    y_average = sum(y)/len(y)
+    return (x_average, y_average)
+
+
+
 
 
 if __name__ == "__main__":
 
-    read_in_trajectories = pathGenerator.read_trajectories_from_file("sampleTrajectory_0[].txt")
+    read_in_trajectories = pathGenerator.read_trajectories_from_file("random_path_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0).txt")
 
-    approximation_parameters = processTrajectory(read_in_trajectories[0])
+    #approximation_parameters = processTrajectory(read_in_trajectories[0])
     #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization
     #approximation_parameters is how we store / move around the approximation of the given trajectory
 
-    display_approximation_plus_original_trajectory(approximation_parameters, read_in_trajectories[0])
+    #display_approximation_plus_original_trajectory(approximation_parameters, read_in_trajectories[0])
     #use display_approximation for just displaying the approximation generated from approximation_parameters
 
-    list_of_approximation_parameters = []
-    list_of_approximation_parameters.append(approximation_parameters)
+    list_of_approximation_parameters_plus_centroid = []
 
-    write_approximations_to_file(list_of_approximation_parameters, "sample_approximation")
+    for trajectory in read_in_trajectories:
+        approximation_parameters = processTrajectory(read_in_trajectories[0])
+        list_of_approximation_parameters_plus_centroid.append( (approximation_parameters, pathCentroid(trajectory)) )
+    write_approximations_to_file(list_of_approximation_parameters_plus_centroid, "random_path_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0)_sample_approximation")
