@@ -68,6 +68,7 @@ void read(std::string s) {
 		std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 		std::cout << "EXECUTION TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count() << " ms\n";
 	}
+	out << hmm << '\n';
 }
 
 int main() {
