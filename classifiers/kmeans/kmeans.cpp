@@ -1,6 +1,8 @@
 #include "kmeans.h"
 
 #include <iostream>
+#include <stdio.h>
+#include <fstream>
 #include <gmp.h>
 #include <mpfr.h>
 #include "mpreal.h"
@@ -160,9 +162,10 @@ namespace kmeans {
 
 }
 
-/*
 int main() {
 	using namespace kmeans;
+
+	std::ofstream out("clustered.dat", std::ofstream::out);
 
 	const int digits = 1000;
 	mpfr::mpreal::set_default_prec(mpfr::digits2bits(digits));
@@ -174,29 +177,25 @@ int main() {
 	mpfr::mpreal epsilon = 0.0001;
 	set_threshold(epsilon);
 
-	int x = 3;
-	int k = 4;
-	int n = 50;
+	int x = 2;
+	int k = 10;
+	int n = 500;
 	std::vector<param<mpfr::mpreal> > paths(n, param<mpfr::mpreal>(x));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < x; j++) {
-			mpfr::mpreal v = generator()%15;
+			mpfr::mpreal v = 2.5 + 15 * (generator()%1000000) / 1000000.0;
 			paths[i].set(j, v);
 		}
 	}
-	std::cout << "PATHS: ";
-	for (int i = 0; i < n; i++) {
-		std::cout << paths[i] << " ";
-		if (i == n-1)
-			std::cout << '\n';
-	}
 	std::vector<param<mpfr::mpreal> > centroids = iterative_LBG(paths, k);
-	std::cout << "CENTROIDS: ";
+	std::vector<std::vector<param<mpfr::mpreal> > > clustered_paths = recluster(centroids, paths);
+	out << k << '\n';
 	for (int i = 0; i < k; i++) {
-		std::cout << centroids[i] << '\n';
-		if (i == k-1)
-			std::cout << '\n';
+		out << centroids[i] << '\n';
+		out << clustered_paths[i].size() << '\n';
+		for (int j = 0; j < clustered_paths[i].size(); j++) {
+			out << clustered_paths[i][j] << '\n';
+		}
 	}
 	return 0;
 }
-*/
