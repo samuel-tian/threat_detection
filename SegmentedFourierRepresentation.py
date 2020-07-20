@@ -40,7 +40,7 @@ def write_approximations_to_file(list_of_approximation_parameters_plus_centroid,
     outputFile = open(name, "w")
     numKeys = len(list_of_approximation_parameters[0][0][0].keys())
     parameterization_length = numKeys*2 + 7
-    num_parameterizations = len(list_of_approximation_parameters)
+    num_parameterizations = len(list_of_approximation_parameters) // numSegmentsPerTrajectory
 
     outputFile.write(str(num_parameterizations) + " " + str(numSegmentsPerTrajectory) + " " + str(parameterization_length) + "\n")
 
@@ -67,7 +67,7 @@ def write_approximations_to_file(list_of_approximation_parameters_plus_centroid,
 
 if __name__ == "__main__":
 
-    read_in_trajectories = pathGenerator.read_trajectories_from_file("random_path_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0).txt")
+    read_in_trajectories = pathGenerator.read_trajectories_from_file("circling_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0).txt")
 
     #approximation_parameters = processTrajectory(read_in_trajectories[0])
     #processTrajectory is the main function for converting the trajectory to a Fourier plus linear parameterization
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     for trajectory in read_in_trajectories:
         print(count)
         count += 1
-        segment_approximation_parameters_plus_centroid = processSegmentedTrajectory(read_in_trajectories[0], 10, 10)
+        segment_approximation_parameters_plus_centroid = processSegmentedTrajectory(read_in_trajectories[0], numSegments, numFreqsPerSubTrajectory)
         for approximation in segment_approximation_parameters_plus_centroid:
             list_of_approximation_parameters_plus_centroid.append(approximation)
-    write_approximations_to_file(list_of_approximation_parameters_plus_centroid, "random_path_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0)_sample_segmented_approximation_14_10", numSegmentsPerTrajectory=numSegments)
+    write_approximations_to_file(list_of_approximation_parameters_plus_centroid, "circling_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0)_sample_segmented_approximation_14_10", numSegmentsPerTrajectory=numSegments)
