@@ -11,13 +11,36 @@ brew install gmp
 brew install mpfr
 ```
 * MPFR C++: [download link](http://www.holoborodko.com/pavel/mpfr/#download)
-	* copy mpreal.h into working directory
+* Boost Template Libraries
+```
+brew install boost
+```
+
 ## Compiling Instructions
+
+### No Project Dependencies
+
 Compile:
 ```
-g++ hmm.cpp -o hmm -std=c++11 -lmpfr -lgmp -lgmpxx
+g++ hmm.cpp -o hmm -std=c++17 -lmpfr -lgmp -lgmpxx
 ```
 Execute:
 ```
 ./hmm
+```
+
+### Generate Static Library / Archive
+
+Compile object files:
+```
+g++ -c ./hmm/hmm.cpp -std=c++17
+g++ -c ./kmeans/kmeans.cpp -std=c++17
+```
+Compile Archive:
+```
+ar rsv archive.a ./hmm/hmm.o ./kmeans/kmeans.o
+```
+Use Archive:
+```
+g++ -o detect detect.cpp -std=c++17 -lgmp -lmpfr archive.a
 ```

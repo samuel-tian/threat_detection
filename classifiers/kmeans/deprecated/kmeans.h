@@ -71,7 +71,6 @@ namespace kmeans {
 		}
 	};
 
-
 	mpfr::mpreal epsilon;
 
 	void set_threshold(mpfr::mpreal epsilon);
@@ -84,7 +83,9 @@ namespace kmeans {
 
 	void update_clusters(std::vector<Path<mpfr::mpreal> >& clusters, std::vector<std::vector<Path<mpfr::mpreal> > >& clustered_paths);
 
-	std::pair<std::vector<Path<mpfr::mpreal> >, std::vector<std::vector<Path<mpfr::mpreal> > > > iterative_LBG(std::vector<Path<mpfr::mpreal> >& paths, int k);
+	std::vector<Path<mpfr::mpreal> > iterative_LBG(std::vector<Path<mpfr::mpreal> >& paths, int k);
+
+	int nearest_centroid(std::vector<Path<mpfr::mpreal> >& centroids, Path<mpfr::mpreal>& path);
 
 }
 
