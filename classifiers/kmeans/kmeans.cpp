@@ -169,7 +169,9 @@ namespace kmeans {
 	std::vector<param<mpfr_float> > iterative_LBG(std::vector<param<mpfr_float> >& paths, int k) {
 		int n = paths.size();
 		std::vector<param<mpfr_float> > centroids = initialize_centroids(paths, k);
+		std::cerr << "initialize" << '\n';
 		std::vector<std::vector<param<mpfr_float> > > clustered_paths = recluster(centroids, paths);
+		std::cerr << "recluster" << '\n';
 		mpfr_float prev_distortion = 1<<30;
 		int iteration_num = 1;
 		while (true) {

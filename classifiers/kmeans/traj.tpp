@@ -121,9 +121,12 @@ namespace kmeans {
 	 * @return outputstream
 	 */
 	template<typename T>
-	std::ostream& operator << (std::ostream& os, traj<T>& t) {
+	std::ostream& operator << (std::ostream& os, traj<T> t) {
+		os << t.size() << '\n';
 		for (int i = 0; i < t.size(); i++) {
-			os << t.get(i) << '\n';
+			os << t.get(i);
+			if (i != t.size()-1)
+				os << '\n';
 		}
 		return os;
 	}

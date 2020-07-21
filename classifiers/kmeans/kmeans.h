@@ -30,7 +30,7 @@ namespace kmeans {
 		std::pair<T, T> get_centroid();
 		void operator = (param p);
 		template<typename S>
-		friend std::ostream& operator << (std::ostream& os, param<S>& p);
+		friend std::ostream& operator << (std::ostream& os, param<S> p);
 		template<typename S>
 		friend S difference(param<S>& a, param<S>& b);
 	};
@@ -55,7 +55,7 @@ namespace kmeans {
 		void set(int i, int j, T& v);
 		void operator = (traj t);
 		template<typename S>
-		friend std::ostream& operator << (std::ostream& os, traj<S>& t);
+		friend std::ostream& operator << (std::ostream& os, traj<S> t);
 	};
 
 	extern mpfr_float epsilon;

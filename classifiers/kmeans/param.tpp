@@ -96,7 +96,7 @@ namespace kmeans {
 	 * @return outputstream
 	 */
 	template<typename T>
-	std::ostream& operator << (std::ostream& os, param<T>& p) {
+	std::ostream& operator << (std::ostream& os, param<T> p) {
 		for (int i = 0; i < p.size(); i++) {
 			if (i == 0)
 				os << "(" << p.get(i);
