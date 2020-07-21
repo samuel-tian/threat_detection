@@ -1,6 +1,6 @@
 #include <iostream>
-#include <gmp.h>
-#include <gmpxx.h>
+// #include <gmp.h>
+// #include <gmpxx.h>
 #include <math.h>
 #include <random>
 #include <chrono>
@@ -14,6 +14,8 @@
 template<typename T>
 using matrix = std::vector<std::vector<T> >;
 
+using namespace boost::multiprecision;
+
 /**
  * Initialize HMM with a set number of states and emissions.
  * Vectors and matrices will be initialized to a uniform distribution.
@@ -26,7 +28,7 @@ HMM::HMM(int num_states, int num_emissions) {
 	this->K = num_emissions;
 	int n = this->N;
 	int k = this->K;
-	mpfr::mpreal x = n;
+	mpfr_float x = n;
 	x = 1 / x;
 	// initialize initial state probabilities to uniform distribution
 	// p[i] = 1 / n
@@ -36,7 +38,7 @@ HMM::HMM(int num_states, int num_emissions) {
 	}
 	// initialize transition probabilties to uniform distribution
 	// p[i][j] = 1 / n
-	this->trans_prob.resize(n, std::vector<mpfr::mpreal>(n));
+	this->trans_prob.resize(n, std::vector<mpfr_float>(n));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			this->trans_prob[i][j] = x;
@@ -45,9 +47,9 @@ HMM::HMM(int num_states, int num_emissions) {
 	// initialize emission probabilities to random distribution
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::mt19937 generator(seed);
-	this->emit_prob.resize(n, std::vector<mpfr::mpreal>(k));
+	this->emit_prob.resize(n, std::vector<mpfr_float>(k));
 	for (int i = 0; i < n; i++) {
-		mpfr::mpreal s = 0;
+		mpfr_float s = 0;
 		for (int j = 0; j < k; j++) {
 			this->emit_prob[i][j] = generator() % 100;
 			s += this->emit_prob[i][j];
@@ -64,12 +66,12 @@ HMM::HMM(int num_states, int num_emissions) {
  *
  * @param emit_prob emission matrix with dimensions n x k
  */
-HMM::HMM(matrix<mpfr::mpreal>& emit_prob) {
+HMM::HMM(matrix<mpfr_float>& emit_prob) {
 	this->N = emit_prob.size();
 	this->K = emit_prob[0].size();
 	int n = this->N;
 	int k = this->K;
-	mpfr::mpreal x = n;
+	mpfr_float x = n;
 	x = 1 / x;
 	// intialize initial state probabilites to uniform distribution
 	// p[i] = 1 / n
@@ -79,7 +81,7 @@ HMM::HMM(matrix<mpfr::mpreal>& emit_prob) {
 	}
 	// initialize transition probabilities to uniform distribution
 	// p[i][j] = 1 / n
-	this->trans_prob.resize(n, std::vector<mpfr::mpreal>(n));
+	this->trans_prob.resize(n, std::vector<mpfr_float>(n));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			this->trans_prob[i][j] = x;
@@ -87,6 +89,36 @@ HMM::HMM(matrix<mpfr::mpreal>& emit_prob) {
 	}
 	// initialize emission probabilities to specified matrix
 	this->emit_prob = emit_prob;
+}
+
+/**
+ * Initialize HMM with all parameters specified
+ *
+ * @param N number of states
+ * @param K number of emissions
+ * @param init_prob initial probability vector
+ * @param trans_prob transition probability between states
+ * @param emit_prob emission probability of symbol at state
+ */
+HMM::HMM(int N, int K, std::vector<mpfr_float>& init_prob, matrix<mpfr_float>& trans_prob, matrix<mpfr_float>& emit_prob) {
+	this->N = N;
+	this->K = K;
+	this->init_prob.resize(N);
+	for (int i = 0; i < N; i++) {
+		this->init_prob[i] = init_prob[i];
+	}
+	this->trans_prob.resize(N, std::vector<mpfr_float>(N));
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			this->trans_prob[i][j] = trans_prob[i][j];
+		}
+	}
+	this->emit_prob.resize(N, std::vector<mpfr_float>(K));
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < K; j++) {
+			this->emit_prob[i][j] = emit_prob[i][j];
+		}
+	}
 }
 
 /**
@@ -99,34 +131,23 @@ HMM::HMM(matrix<mpfr::mpreal>& emit_prob) {
 std::ostream& operator << (std::ostream& os, const HMM& hmm) {
 	int n = hmm.N;
 	int k = hmm.K;
-	mpfr::mpreal total = 0;
-	os << "number of states: " << n << "\n";
-	os << "number of emissions: " << k << "\n";
-	os << "initial state probabilities: ";
-	total = 0;
-	for (int i = 0; i < n; i++) {
+	os << n << "\n"; // number of states
+	os << k << "\n"; // number of emissions
+	for (int i = 0; i < n; i++) { // initial state probabilities
 		os << hmm.init_prob[i] << " ";
-		total += hmm.init_prob[i];
+		if (i == n-1)
+			os << '\n';
 	}
-	os << "-> " << total << "\n";
-	os << "transition probabilities" << "\n";
-	for (int i = 0; i < n; i++) {
-		total = 0;
+	for (int i = 0; i < n; i++) { // transition probabilities
 		for (int j = 0; j < n; j++) {
 			os << hmm.trans_prob[i][j] << " ";
-			total += hmm.trans_prob[i][j];
 		}
-		os << "-> " << total << " ";
 		os << "\n";
 	}
-	os << "emission probabilities" << "\n";
-	for (int i = 0; i < n; i++) {
-		total = 0;
+	for (int i = 0; i < n; i++) { // emission probabilities
 		for (int j = 0; j < k; j++) {
 			os << hmm.emit_prob[i][j] << " ";
-			total += hmm.emit_prob[i][j];
 		}
-		os << "-> " << total << " ";
 		os << "\n";
 	}
 	return os;
@@ -148,18 +169,18 @@ std::ostream& operator << (std::ostream& os, const HMM& hmm) {
  * 1) the scaled forward variables, a matrix of dimension scaled[T][N]
  * 2) the scale factors, a vector of dimension scale_factors[T]
  */
-std::pair<matrix<mpfr::mpreal>, std::vector<mpfr::mpreal> > HMM::generate_forwards(std::vector<int>& obs_seq) {
+std::pair<matrix<mpfr_float>, std::vector<mpfr_float> > HMM::generate_forwards(std::vector<int>& obs_seq) {
 	int n = this->N;
 	int k = this->K;
 	int t = obs_seq.size();
 
-	matrix<mpfr::mpreal> unscaled(t, std::vector<mpfr::mpreal>(n));
-	matrix<mpfr::mpreal> scaled(t, std::vector<mpfr::mpreal>(n));
-	std::vector<mpfr::mpreal> scale_factors(t);
+	matrix<mpfr_float> unscaled(t, std::vector<mpfr_float>(n));
+	matrix<mpfr_float> scaled(t, std::vector<mpfr_float>(n));
+	std::vector<mpfr_float> scale_factors(t);
 	for (int i = 0; i < t; i++) {
 		// base case
 		if (i == 0) {
-			mpfr::mpreal initsum = 0;
+			mpfr_float initsum = 0;
 			for (int j = 0; j < n; j++) {
 				unscaled[i][j] = this->init_prob[j] * this->emit_prob[j][obs_seq[i]];
 				initsum += unscaled[i][j];
@@ -168,9 +189,9 @@ std::pair<matrix<mpfr::mpreal>, std::vector<mpfr::mpreal> > HMM::generate_forwar
 		}
 		// inductive step
 		else {
-			mpfr::mpreal alphasum = 0;
+			mpfr_float alphasum = 0;
 			for (int j = 0; j < n; j++) {
-				mpfr::mpreal alpha = 0;
+				mpfr_float alpha = 0;
 				for (int prev = 0; prev < n; prev++) {
 					alpha += scaled[i-1][prev] * this->trans_prob[prev][j];
 				}
@@ -203,12 +224,12 @@ std::pair<matrix<mpfr::mpreal>, std::vector<mpfr::mpreal> > HMM::generate_forwar
  * @param scale_factor set of scale factors that were generated by the forwards recursion, which will be used to scale the backwards variable
  * @return the scaled backward variables, a matrix of dimension scaled[T][N]
  */
-matrix<mpfr::mpreal> HMM::generate_backwards(std::vector<int>& obs_seq, std::vector<mpfr::mpreal>& scale_factors) {
+matrix<mpfr_float> HMM::generate_backwards(std::vector<int>& obs_seq, std::vector<mpfr_float>& scale_factors) {
 	int n = this->N;
 	int k = this->K;
 	int t = obs_seq.size();
 
-	matrix<mpfr::mpreal> scaled(t, std::vector<mpfr::mpreal>(n));
+	matrix<mpfr_float> scaled(t, std::vector<mpfr_float>(n));
 	for (int i = t-1; i >= 0; i--) {
 		// base case
 		if (i == t-1) {
@@ -219,7 +240,7 @@ matrix<mpfr::mpreal> HMM::generate_backwards(std::vector<int>& obs_seq, std::vec
 		// induction
 		else {
 			for (int j = 0; j < n; j++) {
-				mpfr::mpreal beta = 0;
+				mpfr_float beta = 0;
 				for (int nex = 0; nex < n; nex++) {
 					beta += this->trans_prob[j][nex] * this->emit_prob[nex][obs_seq[i+1]] * scaled[i+1][j];
 				}
@@ -240,13 +261,13 @@ matrix<mpfr::mpreal> HMM::generate_backwards(std::vector<int>& obs_seq, std::vec
  * @param obs_seq observation sequence
  * @return logarithm of the probability of seeing the given observation sequence, because the actual probability is likely to underflow, even with the arbitrary precision library
  */
-mpfr::mpreal HMM::evaluate(std::vector<int>& obs_seq) {
+mpfr_float HMM::evaluate(std::vector<int>& obs_seq) {
 	int n = this->N;
 	int k = this->K;
 	int t = obs_seq.size();
 
-	std::vector<mpfr::mpreal> scale_factors = (this->generate_forwards(obs_seq)).second;
-	mpfr::mpreal eval_value = 0;
+	std::vector<mpfr_float> scale_factors = (this->generate_forwards(obs_seq)).second;
+	mpfr_float eval_value = 0;
 	for (int i = 0; i < t; i++) {
 		eval_value += -log(scale_factors[i]);
 	}
@@ -267,15 +288,15 @@ mpfr::mpreal HMM::evaluate(std::vector<int>& obs_seq) {
  * @param scale_factors scale factors used to scale forward variables
  * @return the scaled gamma variables
  */
-matrix<mpfr::mpreal> HMM::generate_gamma(std::vector<int>& obs_seq, std::vector<matrix<mpfr::mpreal> > epsilon, std::vector<mpfr::mpreal>& scale_factors) {
+matrix<mpfr_float> HMM::generate_gamma(std::vector<int>& obs_seq, std::vector<matrix<mpfr_float> > epsilon, std::vector<mpfr_float>& scale_factors) {
 	int n = this->N;
 	int k = this->K;
 	int t = obs_seq.size();
 
-	matrix<mpfr::mpreal> gamma(t, std::vector<mpfr::mpreal>(n));
+	matrix<mpfr_float> gamma(t, std::vector<mpfr_float>(n));
 	for (int i = 0; i < t; i++) {
 		for (int j = 0; j < n; j++) {
-			mpfr::mpreal gammasum = 0;
+			mpfr_float gammasum = 0;
 			for (int l = 0; l < n; l++) {
 				gammasum += epsilon[i][j][l];
 			}
@@ -299,12 +320,12 @@ matrix<mpfr::mpreal> HMM::generate_gamma(std::vector<int>& obs_seq, std::vector<
  * @param scale_factors scale factors used to scale forward variables
  * @return the scaled epsilon variables
  */
-std::vector<matrix<mpfr::mpreal> > HMM::generate_epsilon(std::vector<int>& obs_seq, matrix<mpfr::mpreal>& alpha, matrix<mpfr::mpreal>& beta, std::vector<mpfr::mpreal>& scale_factors) {
+std::vector<matrix<mpfr_float> > HMM::generate_epsilon(std::vector<int>& obs_seq, matrix<mpfr_float>& alpha, matrix<mpfr_float>& beta, std::vector<mpfr_float>& scale_factors) {
 	int n = this->N;
 	int k = this->K;
 	int t = obs_seq.size();
 
-	std::vector<matrix<mpfr::mpreal> > epsilon(t, matrix<mpfr::mpreal>(n, std::vector<mpfr::mpreal>(n)));
+	std::vector<matrix<mpfr_float> > epsilon(t, matrix<mpfr_float>(n, std::vector<mpfr_float>(n)));
 	for (int i = 0; i < t-1; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int l = 0; l < n; l++) {
@@ -332,16 +353,16 @@ void HMM::baum_welch(std::vector<int>& obs_seq) {
 	int k = this->K;
 	int t = obs_seq.size();
 
-	std::pair<matrix<mpfr::mpreal>, std::vector<mpfr::mpreal> > alpha_scale_pair = this->generate_forwards(obs_seq);
-	matrix<mpfr::mpreal> alpha = alpha_scale_pair.first;
-	std::vector<mpfr::mpreal> scale_factors = alpha_scale_pair.second;
-	matrix<mpfr::mpreal> beta = this->generate_backwards(obs_seq, scale_factors);
-	std::vector<matrix<mpfr::mpreal> > epsilon = this->generate_epsilon(obs_seq, alpha, beta, scale_factors);
-	matrix<mpfr::mpreal> gamma = this->generate_gamma(obs_seq, epsilon, scale_factors);
+	std::pair<matrix<mpfr_float>, std::vector<mpfr_float> > alpha_scale_pair = this->generate_forwards(obs_seq);
+	matrix<mpfr_float> alpha = alpha_scale_pair.first;
+	std::vector<mpfr_float> scale_factors = alpha_scale_pair.second;
+	matrix<mpfr_float> beta = this->generate_backwards(obs_seq, scale_factors);
+	std::vector<matrix<mpfr_float> > epsilon = this->generate_epsilon(obs_seq, alpha, beta, scale_factors);
+	matrix<mpfr_float> gamma = this->generate_gamma(obs_seq, epsilon, scale_factors);
 
 
 	// re-estimate initial state probabilities
-	mpfr::mpreal gammasum = 0;
+	mpfr_float gammasum = 0;
 	for (int i = 0; i < n; i++) {
 		gammasum += gamma[0][i];
 	}
@@ -350,12 +371,12 @@ void HMM::baum_welch(std::vector<int>& obs_seq) {
 	}
 	// re-estimate transition matrix probabilities
 	for (int i = 0; i < n; i++) {
-		mpfr::mpreal den = 0;
+		mpfr_float den = 0;
 		for (int j = 0; j < t-1; j++) {
 			den += gamma[j][i];
 		}
 		for (int j = 0; j < n; j++) {
-			mpfr::mpreal num = 0;
+			mpfr_float num = 0;
 			for (int l = 0; l < t-1; l++) {
 				num += epsilon[l][i][j];
 			}
@@ -368,12 +389,12 @@ void HMM::baum_welch(std::vector<int>& obs_seq) {
 		obs_seq_vals[obs_seq[i]].push_back(i);
 	}
 	for (int i = 0; i < n; i++) {
-		mpfr::mpreal den = 0;
+		mpfr_float den = 0;
 		for (int j = 0; j < t; j++) {
 			den += gamma[j][i];
 		}
 		for (int j = 0; j < k; j++) {
-			mpfr::mpreal num = 0;
+			mpfr_float num = 0;
 			for (int l : obs_seq_vals[j]) {
 				num += gamma[l][i];
 			}
@@ -395,19 +416,19 @@ void HMM::baum_welch(std::vector<int>& obs_seq) {
 void HMM::multi_baum_welch(std::vector<std::vector<int> >& obs_seqs) {
 	int n = this->N;
 	int k = this->K;
-	matrix<mpfr::mpreal> a_num(n, std::vector<mpfr::mpreal>(n));
-	matrix<mpfr::mpreal> a_den(n, std::vector<mpfr::mpreal>(n));
-	matrix<mpfr::mpreal> b_num(n, std::vector<mpfr::mpreal>(k));
-	matrix<mpfr::mpreal> b_den(n, std::vector<mpfr::mpreal>(k));
+	matrix<mpfr_float> a_num(n, std::vector<mpfr_float>(n));
+	matrix<mpfr_float> a_den(n, std::vector<mpfr_float>(n));
+	matrix<mpfr_float> b_num(n, std::vector<mpfr_float>(k));
+	matrix<mpfr_float> b_den(n, std::vector<mpfr_float>(k));
 	for (std::vector<int>& obs_seq : obs_seqs) {
 		int t = obs_seq.size();
 		// initialize auxillary variables
-		std::pair<matrix<mpfr::mpreal>, std::vector<mpfr::mpreal> > alpha_scale_pair = this->generate_forwards(obs_seq);
-		matrix<mpfr::mpreal> alpha = alpha_scale_pair.first;
-		std::vector<mpfr::mpreal> scale_factors = alpha_scale_pair.second;
-		matrix<mpfr::mpreal> beta = this->generate_backwards(obs_seq, scale_factors);
-		std::vector<matrix<mpfr::mpreal> > epsilon = this->generate_epsilon(obs_seq, alpha, beta, scale_factors);
-		matrix<mpfr::mpreal> gamma = this->generate_gamma(obs_seq, epsilon, scale_factors);
+		std::pair<matrix<mpfr_float>, std::vector<mpfr_float> > alpha_scale_pair = this->generate_forwards(obs_seq);
+		matrix<mpfr_float> alpha = alpha_scale_pair.first;
+		std::vector<mpfr_float> scale_factors = alpha_scale_pair.second;
+		matrix<mpfr_float> beta = this->generate_backwards(obs_seq, scale_factors);
+		std::vector<matrix<mpfr_float> > epsilon = this->generate_epsilon(obs_seq, alpha, beta, scale_factors);
+		matrix<mpfr_float> gamma = this->generate_gamma(obs_seq, epsilon, scale_factors);
 		// re-estimate transition matrix probabilities
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
@@ -423,7 +444,7 @@ void HMM::multi_baum_welch(std::vector<std::vector<int> >& obs_seqs) {
 			obs_seq_vals[obs_seq[i]].push_back(i);
 		}
 		for (int i = 0; i < n; i++) {
-			mpfr::mpreal den = 0;
+			mpfr_float den = 0;
 			for (int j = 0; j < t; j++) {
 				den += gamma[j][i];
 			}
@@ -469,14 +490,14 @@ std::vector<int> HMM::viterbi(std::vector<int>& obs_seq) {
 	int t = obs_seq.size();
 
 	// preprocess logarithms of transition probability matrix
-	matrix<mpfr::mpreal> log_trans(n, std::vector<mpfr::mpreal>(n));
+	matrix<mpfr_float> log_trans(n, std::vector<mpfr_float>(n));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			log_trans[i][j] = log(this->trans_prob[i][j]);
 		}
 	}
 	// initialize dynamic programming variables
-	matrix<mpfr::mpreal> phi(t, std::vector<mpfr::mpreal>(n));
+	matrix<mpfr_float> phi(t, std::vector<mpfr_float>(n));
 	matrix<int> prev_state(t, std::vector<int>(n));
 	for (int i = 0; i < t; i++) {
 		// base case
@@ -489,7 +510,7 @@ std::vector<int> HMM::viterbi(std::vector<int>& obs_seq) {
 		// induction
 		else {
 			for (int j = 0; j < n; j++) {
-				mpfr::mpreal phimax = INT_MIN;
+				mpfr_float phimax = INT_MIN;
 				for (int prev = 0; prev < n; prev++) {
 					if (phi[i-1][prev] + log_trans[prev][j] > phimax) {
 						phimax = phi[i-1][prev] + log_trans[prev][j];
@@ -501,7 +522,7 @@ std::vector<int> HMM::viterbi(std::vector<int>& obs_seq) {
 		}
 	}
 	// terminate
-	std::pair<mpfr::mpreal, int> end_state = {INT_MIN, -1};
+	std::pair<mpfr_float, int> end_state = {INT_MIN, -1};
 	for (int i = 0; i < n; i++) {
 		if (phi[t-1][i] > end_state.first) {
 			end_state = {phi[t-1][i], prev_state[t-1][i]};
@@ -523,7 +544,7 @@ void HMM::segment_init(std::vector<int>& obs_seq) {
 	int t = obs_seq.size();
 
 	std::vector<int> state_seq = this->viterbi(obs_seq);
-	std::vector<std::vector<mpfr::mpreal> > state_obs_count(n, std::vector<mpfr::mpreal>(k));
+	std::vector<std::vector<mpfr_float> > state_obs_count(n, std::vector<mpfr_float>(k));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < k; j++) {
 			state_obs_count[i][j] = 1;
@@ -533,7 +554,7 @@ void HMM::segment_init(std::vector<int>& obs_seq) {
 		state_obs_count[state_seq[i]][obs_seq[i]]++;
 	}
 	for (int i = 0; i < n; i++) {
-		mpfr::mpreal emitsum = 0;
+		mpfr_float emitsum = 0;
 		for (int j = 0; j < k; j++) {
 			emitsum += state_obs_count[i][j];
 		}
@@ -553,7 +574,7 @@ void HMM::segment_init(std::vector<int>& obs_seq) {
 void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 	int n = this->N;
 	int k = this->K;
-	std::vector<std::vector<mpfr::mpreal> > state_obs_count(n, std::vector<mpfr::mpreal>(k));
+	std::vector<std::vector<mpfr_float> > state_obs_count(n, std::vector<mpfr_float>(k));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < k; j++) {
 			state_obs_count[i][j] = 1;
@@ -567,7 +588,7 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 		}
 	}
 	for (int i = 0; i < n; i++) {
-		mpfr::mpreal emitsum = 0;
+		mpfr_float emitsum = 0;
 		for (int j = 0; j < k; j++) {
 			emitsum += state_obs_count[i][j];
 		}
@@ -581,23 +602,21 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 	std::chrono::high_resolution_clock::time_point t0_final = std::chrono::high_resolution_clock::now(); // time before execution
 
 // 	// set precision
-// 	const int digits = 1000;
-// 	mpfr::mpreal::set_default_prec(mpfr::digits2bits(digits));
-// 	std::cout << "PRECISION: " << mpfr::mpreal::get_default_prec() << "\n";
+// 	mpfr_float::default_precision(250);
 
 // 	int n = 5;
 // 	int k = 50;
 // 	int t = 500;
-// 	matrix<mpfr::mpreal> emit_prob;
+// 	matrix<mpfr_float> emit_prob;
 
 // 	//  Mersene twister, which is a random number generator that has better performance than C++ rand() / srand()
 // 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 // 	std::mt19937 generator(seed);
 
 // 	// generate emission matrix
-// 	emit_prob.resize(n, std::vector<mpfr::mpreal>(k));
+// 	emit_prob.resize(n, std::vector<mpfr_float>(k));
 // 	for (int i = 0; i < n; i++) {
-// 		mpfr::mpreal total = 0;
+// 		mpfr_float total = 0;
 // 		for (int j = 0; j < k; j++) {
 // 			int val = 1 + generator() % 9; // generate a random value from 1 to 9
 // 			total += val;
@@ -640,7 +659,7 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 	
 // 	// testing multiple observation sequences
 // 	std::vector<std::vector<int> > obs_seqs;
-// 	int x = 15;
+// 	int x = 400;
 // 	obs_seqs.resize(x);
 // 	for (int i = 0; i < x; i++) {
 // 		obs_seqs[i].resize(t);
@@ -648,16 +667,16 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 			obs_seqs[i][j] = generator() % k;
 // 		}	
 // 	}
-// 	for (int iteration = 0; iteration < 3; iteration++) {
+// 	for (int iteration = 0; iteration < 11; iteration++) {
 // 		// checking how long each iteration for training and evaluation takes
 // 		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
 
 // 		if (iteration == 0) {
 // 			std::cout << "BEFORE" << "\n";
 // 			// std::cout << hmm << '\n';
-// 			mpfr::mpreal tot = 0;
+// 			mpfr_float tot = 0;
 // 			for (int i = 0; i < x; i++) {
-// 				mpfr::mpreal val = hmm.evaluate(obs_seqs[i]);
+// 				mpfr_float val = hmm.evaluate(obs_seqs[i]);
 // 				std::cout << val << "\n";
 // 				tot += val;
 // 			}
@@ -668,9 +687,9 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 		hmm.multi_baum_welch(obs_seqs);
 // 		std::cout << "ITERATION " << iteration+1 << '\n';
 // 		// std::cout << hmm << "\n";
-// 		mpfr::mpreal tot = 0;
+// 		mpfr_float tot = 0;
 // 		for (int i = 0; i < x; i++) {
-// 			mpfr::mpreal val = hmm.evaluate(obs_seqs[i]);
+// 			mpfr_float val = hmm.evaluate(obs_seqs[i]);
 // 			std::cout << val << "\n";
 // 			tot += val;
 // 		}
@@ -692,11 +711,11 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 	*/
 
 // 	// testing emission matrix initialization
-// 	std::vector<int> obs_seq(t);
+// 	/*std::vector<int> obs_seq(t);
 // 	for (int i = 0; i < t; i++) {
 // 		obs_seq[i] = generator() % k;
 // 	}
-// 	for (int iteration = 0; iteration < 2; iteration++) {
+// 	for (int iteration = 0; iteration < 1; iteration++) {
 // 		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
 // 		if (iteration == 0) {
 // 			std::cout << "BEFORE\n";
@@ -714,7 +733,7 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 		std::cout << "EXECUTION TIME " << iteration+1 << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << "\n"; // time elapsed
 // 		std::cout << "\n------------------\n\n";
 // 	}
-// 	for (int iteration = 0; iteration < 30; iteration++) {
+// 	for (int iteration = 0; iteration < 1; iteration++) {
 // 		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
 // 		if (iteration == 0) {
 // 			std::cout << "BEFORE\n";
@@ -734,7 +753,7 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 		std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now(); // time after execution
 // 		std::cout << "EXECUTION TIME " << iteration+1 << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << "\n"; // time elapsed
 // 		std::cout << "\n------------------\n\n";
-// 	}
+// 	}*/
 
 // 	std::chrono::high_resolution_clock::time_point t1_final = std::chrono::high_resolution_clock::now(); // time after execution
 // 	std::cout << "TOTAL EXECUTION TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1_final - t0_final).count() << " ms" << "\n"; // time elapsed

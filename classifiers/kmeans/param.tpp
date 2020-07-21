@@ -81,7 +81,7 @@ namespace kmeans {
 	 * @return void
 	 */
 	template<typename T>
-	void param<T>::operator = (param<T>& p) {
+	void param<T>::operator = (param<T> p) {
 		this->val.resize(p.size());
 		for (int i = 0; i < p.size(); i++) {
 			this->val[i] = p.get(i);
@@ -106,25 +106,5 @@ namespace kmeans {
 		os << ")";
 		return os;
 	}
-
-	/**
-	 * Measure of distortion between two parameterizations
-	 * Returns the Euclidean distance between the centroids of the two parameterizations
-	 *
-	 * @param a first parameterization
-	 * @param b second parameterization
-	 * @return Euclidean distance between parameterizations a and b
-	 */
-	template<typename T>
-	T difference(param<T>& a, param<T>& b) {
-		std::pair<T, T> centroid_a = a.get_centroid();
-		std::pair<T, T> centroid_b = b.get_centroid();
-		T ret = 0;
-		ret += (centroid_a.first - centroid_b.first) * (centroid_a.first - centroid_b.first);
-		ret += (centroid_a.second - centroid_b.second) * (centroid_a.second - centroid_b.second);
-		return ret;
-	}
-
-	
 
 }

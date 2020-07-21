@@ -11,7 +11,10 @@ brew install gmp
 brew install mpfr
 ```
 * MPFR C++: [download link](http://www.holoborodko.com/pavel/mpfr/#download)
-	* copy mpreal.h into working directory
+* Boost Template Libraries
+```
+brew install boost
+```
 
 ## Compiling Instructions
 

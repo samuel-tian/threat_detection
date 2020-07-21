@@ -106,7 +106,7 @@ namespace kmeans {
 	 * @return void
 	 */
 	template<typename T>
-	void traj<T>::operator = (traj<T>& t) {
+	void traj<T>::operator = (traj<T> t) {
 		this->val.resize(t.size());
 		for (int i = 0; i < t.size(); i++) {
 			this->val[i] = t.get(i);
