@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 #orange is approximation, black is actual
 
 read_in_trajectories = pathGenerator.read_trajectories_from_file("circling_400(20, 15, 15, 10, 10, 10, 10, 10, 0, 0).txt")
-trajectory = read_in_trajectories[1] # change this number to look at different trajectories 
+trajectory = read_in_trajectories[5] # change this number to look at different trajectories 
 
 
 #pathGenerator.display_trajectory(trajectory)

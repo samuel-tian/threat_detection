@@ -174,7 +174,7 @@ def generate_circling_points(scale, prob_distribution):
     #we now create the trajectory
     radius = int(math.sqrt(current_pos[0]**2 + current_pos[1]**2))
     trajectory = [starting_pos]
-    for i in range(8*radius):
+    for i in range(20*radius):
         if rotation_direction == "CW":
             target_vector = (current_pos[1], -1*current_pos[0])
         else:
@@ -254,12 +254,12 @@ if __name__ == "__main__":
     #trajectory = generate_circling_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
     trajectories = []
     for i in range(400):
-        trajectory = generate_random_path_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
+        trajectory = generate_circling_points(1000, (20, 15, 15, 10, 10, 10, 10, 10, 0, 0)) #example
         trajectories.append(trajectory)
         print(i)
 
     #trajectories.append(trajectory) #specify the optional parameters so we know which file is which
-    write_trajectories_to_file(trajectories, type="random_path", numLines=400, prob_dist=(20, 15, 15, 10, 10, 10, 10, 10, 0, 0))
+    write_trajectories_to_file(trajectories, type="circling", numLines=400, prob_dist=(20, 15, 15, 10, 10, 10, 10, 10, 0, 0))
     #read_in_trajectories = read_trajectories_from_file("sampleTrajectory_0[].txt")
     #display_trajectory(read_in_trajectories[0])
     #listFile = open("sampleTrajectory_0[].txt")
