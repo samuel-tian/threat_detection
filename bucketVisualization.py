@@ -37,7 +37,7 @@ def read_in_segment(segment_string, numSegments):
 
     x_centroid = segment_tuple[0]
     y_centroid = segment_tuple[1]
-    numPointsPerSegment = segment_tuple[2] // numSegments
+    numPointsPerSegment = segment_tuple[2] 
     slope_x = segment_tuple[3]
     slope_y = segment_tuple[4]
     intercept_x = segment_tuple[5]
@@ -78,7 +78,7 @@ def generateSegmentedApproximation(segmented_trajectory):
             approximation_x.append(value)
         for value in segment_approximation_y:
             approximation_y.append(value)
-        
+
     return (approximation_x, approximation_y)
 
 if __name__ == "__main__":

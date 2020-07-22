@@ -27,7 +27,7 @@ def processSegmentedTrajectory(trajectory, numSegments, frequencies_per_segment)
         frequencies_x = determineOptimal(frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals), x_vals)
         frequencies_y = determineOptimal(frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals), y_vals)
 
-        segment_parameters.append( ( ( (frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals)) , (frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals)) ), (sum(x_vals_slice)/len(x_vals_slice), sum(y_vals_slice)/len(y_vals_slice)) ) )
+        segment_parameters.append( ( ( (frequencies_x, augmented_data_x[1], augmented_data_x[2], len(x_vals_slice)) , (frequencies_y, augmented_data_y[1], augmented_data_y[2], len(y_vals_slice)) ), (sum(x_vals_slice)/len(x_vals_slice), sum(y_vals_slice)/len(y_vals_slice)) ) )
 
     return segment_parameters
 
