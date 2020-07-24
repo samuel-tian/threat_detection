@@ -108,41 +108,23 @@ std::vector<std::vector<int> > cluster_traj(std::vector<traj<mpfr_float> >& traj
 	return traj_mapped;
 }
 
-HMM train_HMM(std::string s, std::vector<std::vector<int> >& trajs_mapped, int n, int k) {
+HMM train_HMM(std::string s, std::vector<std::vector<int> > trajs_mapped = {}, int n = 10, int k = 256) {
 	std::cerr << "training " << s << '\n';
 	std::ifstream fin("data/hmm/" + s + "_seg_HMM.dat");
 	HMM hmm;
 	if (is_empty(fin)) {
-		std::cerr << "generating new HMM" << '\n';
+		std::cerr << "generating new HMM " << s << '\n';
 		fin.close();
+		HMM::set_threshold(1);
 		std::ofstream out("data/hmm/" + s + "_seg_HMM.dat");
 		HMM hmm(n, k);
 		// initialize HMM using segmental kmeans segmentation
-		for (int iteration = 0; iteration < 10; iteration++) {
-			std::cerr << "INITIALIZE ITERATION " << iteration << '\n';
-			std::cerr << "----------------------\n";
-			std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
-
-			hmm.multi_segment_init(trajs_mapped);
-
-			std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-			std::cerr << "EXECUTION TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count() << " ms\n\n";
-		}
-		for (int iteration = 0; iteration < 10; iteration++) {
-			std::cerr << "REESTIMATION ITERATION " << iteration << '\n';
-			std::cerr << "----------------------\n";
-			std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
-
-			hmm.multi_baum_welch(trajs_mapped);
-			
-			std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-			std::cerr << "EXECUTION TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count() << " ms\n\n";
-		}
+		hmm.multi_train(trajs_mapped);
 		out << hmm << '\n';
 		out.close();
 	}
 	else {
-		std::cerr << "reading HMM from file" << '\n';
+		std::cerr << "reading HMM from file " << s << '\n';
 		fin.seekg(0, fin.beg);
 		std::string in_buffer;
 		std::vector<std::string> buffer_vector;
@@ -183,6 +165,12 @@ HMM train_HMM(std::string s, std::vector<std::vector<int> >& trajs_mapped, int n
 }
 
 void bucketize(std::string s, std::vector<traj<mpfr_float> > trajs, std::vector<param<mpfr_float> > centroids, HMM hmm, int num_buckets) {
+	std::ifstream fin("data/bucketized/" + s + "_seg_bucketized.dat");
+	if (!is_empty(fin)) {
+		fin.close();
+		return;
+	}
+	fin.close();
 	std::cerr << "bucketizing " << s << '\n';
 	std::ofstream fout("data/bucketized/" + s + "_seg_bucketized.dat");
 	std::vector<std::pair<mpfr_float, int> > log_likelihoods;
@@ -208,6 +196,7 @@ void bucketize(std::string s, std::vector<traj<mpfr_float> > trajs, std::vector<
 			fout << trajs[buckets[i][j]] << '\n';
 		}
 	}
+	fout.close();
 }
 
 void preprocess(std::string s, int n = 10, int k = 256) {
@@ -227,9 +216,68 @@ void preprocess(std::string s, int n = 10, int k = 256) {
 	bucketize(s, trajs, centroids, hmm, 20);
 }
 
+void evaluation(std::string s, std::vector<std::string> strs, int n = 10, int k = 256) {
+	std::vector<HMM> activity_HMM(strs.size());
+	std::vector<int> cnt(strs.size());
+	for (int i = 0; i < strs.size(); i++) {
+		activity_HMM[i] = train_HMM(strs[i]);
+	}
+	std::pair<std::vector<param<mpfr_float> >, std::vector<traj<mpfr_float> > > tmp = read_params_raw(s);
+	std::vector<param<mpfr_float> > paths = tmp.first;
+	std::vector<traj<mpfr_float> > trajs = tmp.second;
+	std::vector<param<mpfr_float> > centroids = cluster_params(s, paths, k);
+	std::vector<std::vector<int> > trajs_mapped = cluster_traj(trajs, centroids);
+	for (int i = 0; i < trajs_mapped.size(); i++) {
+		int ind = -1;
+		mpfr_float max_prob = -(1<<30);
+		for (int j = 0; j < strs.size(); j++) {
+			mpfr_float prob = activity_HMM[j].evaluate(trajs_mapped[i]);
+			if (prob > max_prob) {
+				max_prob = prob;
+				ind = j;
+			}
+		}
+		if (i == trajs_mapped.size()-1)
+			std::cerr << '\n';
+		cnt[ind]++;
+	}
+	for (int i = 0; i < cnt.size(); i++) {
+		std::cerr << strs[i] << " " << cnt[i] << '\n';
+	}
+}
+
+void preprocess(std::vector<std::string> s, int n=10, int k=256) {
+	std::vector<param<mpfr_float> > paths;
+	std::vector<std::vector<traj<mpfr_float> > > trajs;
+	for (int i = 0; i < s.size(); i++) {
+		std::pair<std::vector<param<mpfr_float> >, std::vector<traj<mpfr_float> > > tmp = read_params_raw(s[i]);
+		for (int j = 0; j < tmp.first.size(); j++) {
+			paths.push_back(tmp.first[j]);
+		}
+		trajs.push_back(tmp.second);
+	}
+	std::vector<param<mpfr_float> > centroids = cluster_params("all", paths, k);
+	std::vector<std::vector<std::vector<int> > > trajs_mapped(s.size());
+	for (int i = 0; i < s.size(); i++) {
+		trajs_mapped[i] = cluster_traj(trajs[i], centroids);
+	}
+	std::vector<HMM> activity_HMM(s.size());
+	for (int i = 0; i < s.size(); i++) {
+		activity_HMM[i] = train_HMM(s[i], trajs_mapped[i], n, k);
+	}
+	for (int i = 0; i < s.size(); i++) {
+		bucketize(s[i], trajs[i], centroids, activity_HMM[i], 20);
+	}
+}
+
 int main() {
 	set_threshold(0.01);
 	mpfr_float::default_precision(250);
 
-	preprocess("circling");
+	// preprocess("circling");
+	// preprocess("normal");
+	std::vector<std::string> strs = {"circling", "normal"};
+	preprocess(strs);
+	evaluation(strs[0], strs);
+	evaluation(strs[1], strs);
 }

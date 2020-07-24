@@ -13,6 +13,10 @@
 class HMM {
 public:
 
+	static boost::multiprecision::mpfr_float epsilon;
+	static void set_threshold(boost::multiprecision::mpfr_float e);
+	static boost::multiprecision::mpfr_float get_threshold();
+
 	int N, K; // number of states, number of observations
 	std::vector<boost::multiprecision::mpfr_float> init_prob; // siez N vector, initial state probabilities
 	std::vector<std::vector<boost::multiprecision::mpfr_float> > trans_prob; // N x N matrix, probability of transitioning from state i to state j
@@ -40,13 +44,15 @@ public:
 
 	void baum_welch(std::vector<int>& obs_seq);
 
-	void multi_baum_welch(std::vector<std::vector<int> >& obs_seqs);
+	boost::multiprecision::mpfr_float multi_baum_welch(std::vector<std::vector<int> >& obs_seqs);
 
 	std::vector<int> viterbi(std::vector<int>& obs_seq);
 
 	void segment_init(std::vector<int>& obs_seq);
 
-	void multi_segment_init(std::vector<std::vector<int> >& obs_seqs);
+	boost::multiprecision::mpfr_float multi_segment_init(std::vector<std::vector<int> >& obs_seqs);
+
+	void multi_train(std::vector<std::vector<int> >& obs_seqs);
 
 };
 
