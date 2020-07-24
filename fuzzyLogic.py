@@ -28,5 +28,8 @@ class fuzzySet:
             (-1 + 2*x, True)
         )
 
+        self.fuzzyVector = []
+        self.fuzzyVector.append()
+
 
 mySet = fuzzySet(0.8)
