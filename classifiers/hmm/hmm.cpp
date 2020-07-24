@@ -16,6 +16,26 @@ using matrix = std::vector<std::vector<T> >;
 
 using namespace boost::multiprecision;
 
+mpfr_float HMM::epsilon = 0;
+
+/**
+ * Set distortion threshold
+ * 
+ * @param e new threshold
+ */
+void HMM::set_threshold(mpfr_float e) {
+	HMM::epsilon = e;
+}
+
+/**
+ * Get distortion threshold
+ * 
+ * @return threshold
+ */
+mpfr_float HMM::get_threshold() {
+	return HMM::epsilon;
+}
+
 /**
  * Initialize HMM with a set number of states and emissions.
  * Vectors and matrices will be initialized to a uniform distribution.
@@ -413,7 +433,7 @@ void HMM::baum_welch(std::vector<int>& obs_seq) {
  * @param obs_seq vector of observation sequences
  * @return void
  */
-void HMM::multi_baum_welch(std::vector<std::vector<int> >& obs_seqs) {
+mpfr_float HMM::multi_baum_welch(std::vector<std::vector<int> >& obs_seqs) {
 	int n = this->N;
 	int k = this->K;
 	matrix<mpfr_float> a_num(n, std::vector<mpfr_float>(n));
@@ -456,18 +476,24 @@ void HMM::multi_baum_welch(std::vector<std::vector<int> >& obs_seqs) {
 			}
 		}
 	}
+	mpfr_float distortion = 0;
 	// update transition probability matrix
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			this->trans_prob[i][j] = a_num[i][j] / a_den[i][j];
+			mpfr_float tmp = a_num[i][j] / a_den[i][j];
+			distortion += (this->trans_prob[i][j] - tmp) * (this->trans_prob[i][j] - tmp);
+			this->trans_prob[i][j] = tmp;
 		}
 	}
 	// update emission probability matrix
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < k; j++) {
-			this->emit_prob[i][j] = b_num[i][j] / b_den[i][j];
+			mpfr_float tmp = b_num[i][j] / b_den[i][j];
+			distortion += (this->emit_prob[i][j] - tmp) * (this->emit_prob[i][j] - tmp);
+			this->emit_prob[i][j] = tmp;
 		}
 	}
+	return distortion / (n*n + n*k);
 }
 
 /**
@@ -571,7 +597,7 @@ void HMM::segment_init(std::vector<int>& obs_seq) {
 	*/
 }
 
-void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
+mpfr_float HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 	int n = this->N;
 	int k = this->K;
 	std::vector<std::vector<mpfr_float> > state_obs_count(n, std::vector<mpfr_float>(k));
@@ -587,14 +613,50 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 			state_obs_count[state_seq[i]][obs_seq[i]]++;
 		}
 	}
+	mpfr_float distortion = 0;
 	for (int i = 0; i < n; i++) {
 		mpfr_float emitsum = 0;
 		for (int j = 0; j < k; j++) {
 			emitsum += state_obs_count[i][j];
 		}
 		for (int j = 0; j < k; j++) {
+			mpfr_float tmp = state_obs_count[i][j] / emitsum;
+			distortion += (this->emit_prob[i][j] - tmp) * (this->emit_prob[i][j] - tmp);
 			this->emit_prob[i][j] = state_obs_count[i][j] / emitsum;
 		}
+	}
+	return distortion / (n*k);
+}
+
+void HMM::multi_train(std::vector<std::vector<int> >& obs_seqs) {
+	int iter_num = 1;
+	// initialize HMM
+	std::cerr << "initialize parameters" << '\n';
+	mpfr_float prev_distortion = 1<<30;
+	while (true) {
+		this->multi_segment_init(obs_seqs);
+		mpfr_float cur_distortion = 0;
+		for (int i = 0; i < obs_seqs.size(); i++) {
+			cur_distortion += this->evaluate(obs_seqs[i]);
+		}
+		std::cerr << iter_num++ << " " << cur_distortion << '\n';
+		if (abs(cur_distortion - prev_distortion) < HMM::get_threshold())
+			break;
+		prev_distortion = cur_distortion;
+	}
+	// reestimate HMM parameters
+	std::cerr << "reestimate parameters" << '\n';
+	prev_distortion = 1<<30;
+	while (true) {
+		this->multi_baum_welch(obs_seqs);
+		mpfr_float cur_distortion = 0;
+		for (int i = 0; i < obs_seqs.size(); i++) {
+			cur_distortion += this->evaluate(obs_seqs[i]);
+		}
+		std::cerr << iter_num++ << " " << cur_distortion << '\n';
+		if (abs(cur_distortion - prev_distortion) < HMM::get_threshold())
+			break;
+		prev_distortion = cur_distortion;
 	}
 }
 
@@ -602,11 +664,12 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 	std::chrono::high_resolution_clock::time_point t0_final = std::chrono::high_resolution_clock::now(); // time before execution
 
 // 	// set precision
-// 	mpfr_float::default_precision(250);
+// 	mpfr_float::default_precision(1000);
+// 	HMM::set_threshold(0.000001);
 
 // 	int n = 5;
-// 	int k = 50;
-// 	int t = 500;
+// 	int k = 256;
+// 	int t = 100;
 // 	matrix<mpfr_float> emit_prob;
 
 // 	//  Mersene twister, which is a random number generator that has better performance than C++ rand() / srand()
@@ -667,6 +730,8 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 			obs_seqs[i][j] = generator() % k;
 // 		}	
 // 	}
+// 	hmm.multi_train(obs_seqs);
+
 // 	for (int iteration = 0; iteration < 11; iteration++) {
 // 		// checking how long each iteration for training and evaluation takes
 // 		std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now(); // time before execution
@@ -698,7 +763,6 @@ void HMM::multi_segment_init(std::vector<std::vector<int> >& obs_seqs) {
 // 		std::cout << "EXECUTION TIME " << iteration+1 << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << "\n"; // time elapsed
 // 		std::cout << "\n------------------\n\n";
 // 	}
-	
 
 // 	/*
 // 	// testing Viterbi's algorithm
